@@ -9,13 +9,23 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@alchemy/aa-alchemy": "^3.19.0",
+    "@alchemy/aa-core": "^3.19.0",
+    "lucide-react": "^0.577.0",
+    "mongoose": "^9.3.0",
     "next": "16.1.7",
+    "nodemailer": "^8.0.2",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-easy-crop": "^5.5.6",
+    "supertokens-auth-react": "^0.51.2",
+    "supertokens-node": "^24.0.1",
+    "supertokens-web-js": "^0.16.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.37",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
