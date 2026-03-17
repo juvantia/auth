@@ -18,9 +18,19 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            # Создаем папку и заходим в неё
+            mkdir -p /var/www/juvantia/auth
             cd /var/www/juvantia/auth
-            git pull origin main
-            # Собираем и перезапускаем только сервис auth, чтобы не трогать базу без нужды
+
+            # Если проекта нет, клонируем (используем SSH, так как ключ у вас на VPS есть)
+            if [ ! -d ".git" ]; then
+              echo "Repository not found. Cloning..."
+              git clone git@github.com:juvantia/auth.git .
+            else
+              echo "Updating repository..."
+              git pull origin main
+            fi
+
+            # Пересобираем и запускаем контейнеры
             docker compose up -d --build auth
-            # Очистка старых образов для экономии места на VPS
             docker image prune -f
