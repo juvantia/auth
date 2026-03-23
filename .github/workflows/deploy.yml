@@ -31,6 +31,9 @@ jobs:
               git pull origin main
             fi
 
+            # Создаем .env.local из секрета GitHub
+            echo "${{ secrets.ENV_LOCAL }}" > .env.local
+
             # Пересобираем и запускаем контейнеры
             docker compose up -d --build auth
             docker image prune -f
