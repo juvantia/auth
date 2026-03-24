@@ -37,3 +37,4 @@ jobs:
             # Пересобираем и запускаем контейнеры
             docker compose up -d --build auth
             docker image prune -f
+          command_timeout: 30m
