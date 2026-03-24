@@ -99,7 +99,10 @@ function Dashboard() {
         }
         setIsCreatingWallet(true);
         try {
-            const client = await getSmartAccountClient(jwt);
+            const client = await getSmartAccountClient({
+                createNew: true,
+                username: profile?.username || "Juvantia_User"
+            });
             if (client) {
                 const address = await client.getAddress();
                 
