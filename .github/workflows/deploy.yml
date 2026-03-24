@@ -34,13 +34,14 @@ jobs:
             # Создаем .env.local из секрета GitHub с автоматической заменой для Docker/Prod
             echo "${{ secrets.ENV_LOCAL }}" > .env.local
             sed -i 's/localhost:3567/supertokens:3567/g' .env.local
+            sed -i 's/http:\/\/localhost:3001/https:\/\/auth.juvantia.org/g' .env.local
             sed -i 's/localhost:3001/auth.juvantia.org/g' .env.local
             
             # Проверка (выводим в лог только строки с доменами, чтобы не светить пароли)
             echo "--- Verified domains in .env.local ---"
             grep "DOMAIN\|URI" .env.local | grep -v "PASS\|KEY"
 
-            # Пересобираем и запускаем контейнеры
-            docker compose up -d --build auth
+            # Пересобираем и запускаем контейнеры (с очисткой кэша для вшивания HTTPS)
+            docker compose up -d --build --no-cache auth
             docker image prune -f
           command_timeout: 30m
