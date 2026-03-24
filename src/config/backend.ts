@@ -74,6 +74,8 @@ export const backendConfig = (): TypeInput => {
                     : ".juvantia.org",
                 // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
+                // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
+                exposeAccessTokenToFrontendInCookieBasedAuth: true,
             }),
             Dashboard.init(),
         ],

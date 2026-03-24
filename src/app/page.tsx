@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { SessionAuth } from 'supertokens-auth-react/recipe/session';
-import { useSessionContext } from 'supertokens-auth-react/recipe/session';
+import Session, { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
 
 interface UserProfile {
@@ -20,6 +19,7 @@ function Dashboard() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [jwt, setJwt] = useState<string>('');
 
     // Form states
     const [name, setName] = useState('');
@@ -41,6 +41,9 @@ function Dashboard() {
                             setNeedsOnboarding(true);
                         } else {
                             setProfile(data);
+                            // И вот тут достаем RAW JWT токен для Алхимии!
+                            const token = await Session.getAccessToken();
+                            if (token) setJwt(token);
                         }
                     } else {
                         console.error("Failed to fetch profile");
@@ -276,6 +279,30 @@ function Dashboard() {
                                 <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Email Address</p>
                                 <p className="text-sm font-medium text-zinc-300 bg-black/50 p-3 rounded-lg border border-zinc-800">{profile?.email}</p>
                             </div>
+                            
+                            {/* Секция для копирования JWT */}
+                            {jwt && (
+                                <div>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Raw JWT (SuperTokens)</p>
+                                    <div className="flex items-center space-x-2">
+                                        <input
+                                            type="text"
+                                            readOnly
+                                            value={jwt}
+                                            className="text-sm font-mono text-zinc-400 bg-black/50 p-3 rounded-lg border border-zinc-800 flex-1 w-full outline-none"
+                                        />
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(jwt);
+                                                alert("JWT Copied!");
+                                            }}
+                                            className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium"
+                                        >
+                                            Copy
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
 
