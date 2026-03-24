@@ -41,7 +41,7 @@ jobs:
             echo "--- Verified domains in .env.local ---"
             grep "DOMAIN\|URI" .env.local | grep -v "PASS\|KEY"
 
-            # Пересобираем и запускаем контейнеры (с очисткой кэша для вшивания HTTPS)
-            docker compose up -d --build --no-cache auth
+            # Пересобираем и запускаем контейнеры
+            docker compose up -d --build auth
             docker image prune -f
           command_timeout: 30m
