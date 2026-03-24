@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IUser extends Document {
   supertokens_id: string;
+  email: string;
   name: string;
   username: string;
   avatar_url?: string;
@@ -13,6 +14,7 @@ export interface IUser extends Document {
 const UserSchema: Schema = new Schema(
   {
     supertokens_id: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
     name: { type: String, required: true, maxlength: 32 },
     username: { 
       type: String, 

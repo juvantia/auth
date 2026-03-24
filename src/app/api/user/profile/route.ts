@@ -43,9 +43,15 @@ export async function GET(request: NextRequest) {
                 const userInfo = await supertokens.getUser(session.getUserId());
                 const email = userInfo?.emails[0];
 
+                // Самолечение: если в базе нет почты, записываем её
+                if (email && !user.email) {
+                    user.email = email;
+                    await user.save();
+                }
+
                 return NextResponse.json({
                     ...user.toObject(),
-                    email
+                    email: user.email || email
                 }, { status: 200 });
             } catch (error: any) {
                 console.error("Profile GET error:", error);
@@ -74,6 +80,14 @@ export async function POST(request: NextRequest) {
             await dbConnect();
             const { name, username, avatar_url } = await request.json();
 
+            // Получаем актуальный email из SuperTokens
+            const userInfo = await supertokens.getUser(session.getUserId());
+            const email = userInfo?.emails[0];
+
+            if (!email) {
+                return NextResponse.json({ message: "Could not retrieve email from session" }, { status: 400 });
+            }
+
             const existingUser = await User.findOne({ username });
             if (existingUser && existingUser.supertokens_id !== session.getUserId()) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
@@ -81,7 +95,7 @@ export async function POST(request: NextRequest) {
 
             const savedUser = await User.findOneAndUpdate(
                 { supertokens_id: session.getUserId() },
-                { $set: { name, username, ...(avatar_url ? { avatar_url } : {}) } },
+                { $set: { name, username, email, ...(avatar_url ? { avatar_url } : {}) } },
                 { upsert: true, new: true }
             );
 
