@@ -31,8 +31,10 @@ jobs:
               git pull origin main
             fi
 
-            # Создаем .env.local из секрета GitHub
+            # Создаем .env.local из секрета GitHub с автоматической заменой для Docker/Prod
             echo "${{ secrets.ENV_LOCAL }}" > .env.local
+            sed -i 's/localhost:3567/supertokens:3567/g' .env.local
+            sed -i 's/http:\/\/localhost:3001/https:\/\/auth.juvantia.org/g' .env.local
 
             # Пересобираем и запускаем контейнеры
             docker compose up -d --build auth
