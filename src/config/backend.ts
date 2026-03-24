@@ -2,6 +2,7 @@ import Passwordless from "supertokens-node/recipe/passwordless";
 import Session from "supertokens-node/recipe/session";
 import { TypeInput } from "supertokens-node/types";
 import Dashboard from "supertokens-node/recipe/dashboard";
+import JWT from "supertokens-node/recipe/jwt";
 
 export const backendConfig = (): TypeInput => {
     return {
@@ -77,6 +78,7 @@ export const backendConfig = (): TypeInput => {
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
             }),
+            JWT.init(),
             Dashboard.init(),
         ],
         isInServerlessEnv: true,
