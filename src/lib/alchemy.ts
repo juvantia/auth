@@ -13,7 +13,7 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
         signer = new AlchemyWebSigner({
           client: {
             connection: {
-              rpcUrl: ALCHEMY_RPC_URL,
+              apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "",
             },
             iframeConfig: {
               iframeContainerId: "turnkey-iframe-container",
