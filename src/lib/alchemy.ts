@@ -33,7 +33,7 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
         const client = await createModularAccountAlchemyClient({
             chain: baseSepolia,
             signer: signer,
-            apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY,
+            rpcUrl: ALCHEMY_RPC_URL,
             // (Опционально) Газовая политика для спонсирования транзакций пользователей
             gasManagerConfig: {
                 policyId: process.env.NEXT_PUBLIC_ALCHEMY_GAS_POLICY_ID || "",
