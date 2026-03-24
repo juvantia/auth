@@ -93,9 +93,16 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
             }
 
+            // Умный апдейт: ищем либо по id, либо по почте (если ID сменился, но почта та же - склеиваем)
             const savedUser = await User.findOneAndUpdate(
-                { supertokens_id: session.getUserId() },
-                { $set: { name, username, email, ...(avatar_url ? { avatar_url } : {}) } },
+                { $or: [{ supertokens_id: session.getUserId() }, { email }] },
+                { $set: { 
+                    supertokens_id: session.getUserId(), 
+                    email, 
+                    name, 
+                    username, 
+                    ...(avatar_url ? { avatar_url } : {}) 
+                } },
                 { upsert: true, new: true }
             );
 
