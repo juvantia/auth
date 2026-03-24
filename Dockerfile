@@ -4,6 +4,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --legacy-peer-deps
 COPY . .
+
+# Принудительно задаем домены для билда Next.js, чтобы они вшились в JS
+ARG NEXT_PUBLIC_API_DOMAIN=https://auth.juvantia.org
+ARG NEXT_PUBLIC_WEBSITE_DOMAIN=https://auth.juvantia.org
+ENV NEXT_PUBLIC_API_DOMAIN=$NEXT_PUBLIC_API_DOMAIN
+ENV NEXT_PUBLIC_WEBSITE_DOMAIN=$NEXT_PUBLIC_WEBSITE_DOMAIN
+
 # Пропускаем проверку типов в сборке для скорости, если нужно (или оставляем для надежности)
 RUN npm run build
 
