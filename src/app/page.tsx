@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Session, { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/session';
+import { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/session';
+import Session from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
+import { getSmartAccountClient } from '@/lib/alchemy';
 
 interface UserProfile {
     _id: string;
@@ -20,6 +22,7 @@ function Dashboard() {
     const [needsOnboarding, setNeedsOnboarding] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [jwt, setJwt] = useState<string>('');
+    const [isCreatingWallet, setIsCreatingWallet] = useState(false);
 
     // Form states
     const [name, setName] = useState('');
@@ -86,6 +89,41 @@ function Dashboard() {
             setError('Network error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleCreateWallet = async () => {
+        if (!jwt) {
+            alert("No JWT token available. Please try signing out and signing back in.");
+            return;
+        }
+        setIsCreatingWallet(true);
+        try {
+            const client = await getSmartAccountClient(jwt);
+            if (client) {
+                const address = await client.getAddress();
+                
+                // Save wallet address to backend
+                const res = await fetch('/api/user/wallet', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ smart_wallet_address: address })
+                });
+
+                if (res.ok) {
+                    setProfile(prev => prev ? { ...prev, smart_wallet_address: address } : null);
+                    alert("✅ Wallet successfully created!\nAddress: " + address);
+                } else {
+                    alert("Wallet created, but failed to save to profile.");
+                }
+            } else {
+                alert("Failed to initialize Alchemy client.");
+            }
+        } catch (err: any) {
+            console.error(err);
+            alert("Wallet creation failed: " + err.message);
+        } finally {
+            setIsCreatingWallet(false);
         }
     };
 
@@ -315,12 +353,25 @@ function Dashboard() {
                             Secure your assets with Passkeys. Only you have access to your keys.
                         </p>
                         
-                        <button className="px-6 py-3 bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold rounded-xl hover:opacity-90 transition-all">
-                            Create Wallet via Passkey
-                        </button>
+                        {profile?.smart_wallet_address ? (
+                            <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-sm text-[#00FF88] font-mono shadow-inner">
+                                {profile.smart_wallet_address}
+                            </div>
+                        ) : (
+                            <button 
+                                onClick={handleCreateWallet}
+                                disabled={isCreatingWallet}
+                                className="px-6 py-3 bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+                            >
+                                {isCreatingWallet ? 'Creating...' : 'Create Wallet via Passkey'}
+                            </button>
+                        )}
                     </div>
                 </main>
             </div>
+            
+            {/* Невидимый контейнер для Turnkey iframe (нужен Алхимии для работы с подписями) */}
+            <div id="turnkey-iframe-container" style={{ display: 'none' }}></div>
         </div>
     );
 }
