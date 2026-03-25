@@ -1,53 +1,24 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:14-alpine
-    restart: always
-    env_file:
-      - .env.local
-    environment:
-      POSTGRES_USER: ${POSTGRESQL_USER:-supertokens_user}
-      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD:-supertokens_password}
-      POSTGRES_DB: ${POSTGRESQL_DATABASE_NAME:-supertokens}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - supertokens-network
-
-  supertokens:
-    image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
-    depends_on:
-      - db
-    ports:
-      - "3567:3567"
-    env_file:
-      - .env.local
-    environment:
-      POSTGRESQL_USER: ${POSTGRESQL_USER:-supertokens_user}
-      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-supertokens_password}
-      POSTGRESQL_HOST: db
-      POSTGRESQL_PORT: 5432
-      POSTGRESQL_DATABASE_NAME: ${POSTGRESQL_DATABASE_NAME:-supertokens}
-    networks:
-      - supertokens-network
-    restart: always
-
   auth:
-    build: .
-    depends_on:
-      - supertokens
-    ports:
-      - "3000:3000"
+    image: ghcr.io/juvantia/auth:latest
+    container_name: auth-service
+    restart: always
     env_file:
       - .env.local
-    restart: always
+    environment:
+      # We tell the app to find SuperTokens core on the shared network
+      - SUPERTOKENS_CONNECTION_URI=http://supertokens:3567
     networks:
-      - supertokens-network
-
-volumes:
-  postgres-data:
+      - juvantia-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.auth.rule=Host(`auth.juvantia.org`)" # Update with your domain
+      - "traefik.http.routers.auth.entrypoints=websecure"
+      - "traefik.http.routers.auth.tls.certresolver=myresolver"
+      - "traefik.http.services.auth.loadbalancer.server.port=3000"
 
 networks:
-  supertokens-network:
-    driver: bridge
+  juvantia-network:
+    external: true
