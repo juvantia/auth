@@ -1,47 +1,25 @@
-name: Deploy Juvantia Auth
-
+name: Docker Build & Push
 on:
   push:
     branches: [ "main" ]
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - uses: actions/checkout@v4
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            # Создаем папку и заходим в неё
-            mkdir -p /var/www/juvantia/auth
-            cd /var/www/juvantia/auth
-
-            # Если проекта нет, клонируем (используем SSH, так как ключ у вас на VPS есть)
-            if [ ! -d ".git" ]; then
-              echo "Repository not found. Cloning..."
-              git clone git@github.com:juvantia/auth.git .
-            else
-              echo "Updating repository..."
-              git pull origin main
-            fi
-
-            # Создаем .env.local из секрета GitHub с автоматической заменой для Docker/Prod
-            echo "${{ secrets.ENV_LOCAL }}" > .env.local
-            sed -i 's/localhost:3567/supertokens:3567/g' .env.local
-            sed -i 's/http:\/\/localhost:3001/https:\/\/auth.juvantia.org/g' .env.local
-            sed -i 's/localhost:3001/auth.juvantia.org/g' .env.local
-            
-            # Проверка (выводим в лог только строки с доменами, чтобы не светить пароли)
-            echo "--- Verified domains in .env.local ---"
-            grep "DOMAIN\|URI" .env.local | grep -v "PASS\|KEY"
-
-            # Пересобираем и запускаем контейнеры
-            docker compose up -d --build auth
-            docker image prune -f
-          command_timeout: 30m
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
