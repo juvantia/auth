@@ -271,14 +271,14 @@ function Dashboard() {
                                 >
                                     {isSubmitting ? 'Processing...' : 'Create Profile & Wallet →'}
                                 </button>
-                            </button>
-                            <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
+                                <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
                                 Secure Non-Custodial Setup via Passkeys
                             </p>
                         </form>
                     </div>
                 </div>
-            ) : (
+            </div>
+        ) : (
                 <div className="p-8">
                     <div className="max-w-4xl mx-auto">
                         <header className="flex justify-between items-center mb-12">
