@@ -23,6 +23,7 @@ function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [jwt, setJwt] = useState<string>('');
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
+    const [walletStatus, setWalletStatus] = useState(''); // Tracking status for "hidden" creation
 
     // Form states
     const [name, setName] = useState('');
@@ -35,6 +36,10 @@ function Dashboard() {
         async function fetchProfile() {
             if (!session.loading && session.doesSessionExist) {
                 try {
+                    // Всегда получаем токен при входе, он пригодится для создания кошелька
+                    const token = await Session.getAccessToken();
+                    if (token) setJwt(token);
+
                     const res = await fetch('/api/user/profile', {
                         credentials: 'include'
                     });
@@ -42,11 +47,14 @@ function Dashboard() {
                         const data = await res.json();
                         if (data.needsOnboarding) {
                             setNeedsOnboarding(true);
+                            // Предзаполнение полей, если запись в базе уже частично была
+                            if (data.user) {
+                                setName(data.user.name || '');
+                                setUsername(data.user.username || '');
+                                setAvatarUrl(data.user.avatar_url || '');
+                            }
                         } else {
                             setProfile(data);
-                            // И вот тут достаем RAW JWT токен для Алхимии!
-                            const token = await Session.getAccessToken();
-                            if (token) setJwt(token);
                         }
                     } else {
                         console.error("Failed to fetch profile");
@@ -66,15 +74,40 @@ function Dashboard() {
         e.preventDefault();
         setIsSubmitting(true);
         setError('');
+        setWalletStatus('Initializing secure key storage...');
 
         try {
+            if (!jwt) {
+                throw new Error("Authentication session missing. Please refresh the page.");
+            }
+
+            // 1. Создаем кошелек (вызовет системное окно Passkey)
+            setWalletStatus('Create your Passkey in the browser popup...');
+            const client = await getSmartAccountClient({
+                createNew: true,
+                username: username || "Juvantia_User"
+            });
+
+            if (!client) {
+                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
+            }
+
+            const address = await client.getAddress();
+            setWalletStatus('Saving your secure profile...');
+
+            // 2. Сохраняем всё одним махом на бэкенд
             const res = await fetch('/api/user/profile', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include',
-                body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined })
+                body: JSON.stringify({ 
+                    name, 
+                    username, 
+                    avatar_url: avatarUrl || undefined,
+                    smart_wallet_address: address 
+                })
             });
 
             if (res.ok) {
@@ -83,16 +116,18 @@ function Dashboard() {
                 setNeedsOnboarding(false);
             } else {
                 const data = await res.json();
-                setError(data.message || 'Error occurred during onboarding');
+                throw new Error(data.message || 'Error occurred during onboarding');
             }
-        } catch (err) {
-            setError('Network error');
+        } catch (err: any) {
+            setError(err.message || 'Network error');
         } finally {
             setIsSubmitting(false);
+            setWalletStatus('');
         }
     };
 
     const handleCreateWallet = async () => {
+        // Резервный метод на случай, если кошелек не создался при онбординге
         if (!jwt) {
             alert("No JWT token available. Please try signing out and signing back in.");
             return;
@@ -106,7 +141,6 @@ function Dashboard() {
             if (client) {
                 const address = await client.getAddress();
                 
-                // Save wallet address to backend
                 const res = await fetch('/api/user/wallet', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -115,12 +149,8 @@ function Dashboard() {
 
                 if (res.ok) {
                     setProfile(prev => prev ? { ...prev, smart_wallet_address: address } : null);
-                    alert("✅ Wallet successfully created!\nAddress: " + address);
-                } else {
-                    alert("Wallet created, but failed to save to profile.");
+                    alert("✅ Wallet successfully created!");
                 }
-            } else {
-                alert("Failed to initialize Alchemy client.");
             }
         } catch (err: any) {
             console.error(err);
@@ -138,23 +168,16 @@ function Dashboard() {
         reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
-                // Создаем canvas для обрезки (crop) по центру и ресайза
                 const canvas = document.createElement('canvas');
-                const size = 256; // 256x256px
+                const size = 256;
                 canvas.width = size;
                 canvas.height = size;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
-
-                // Обрезаем до ровного квадрата по центру
                 const minSide = Math.min(img.width, img.height);
                 const sx = (img.width - minSide) / 2;
                 const sy = (img.height - minSide) / 2;
-
-                // Рисуем обрезанную картинку
                 ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-                
-                // Конвертируем в base64 JPEG с quality 0.8
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                 setAvatarUrl(dataUrl);
             };
@@ -167,7 +190,7 @@ function Dashboard() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-black text-white">
                 <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div className="w-8 h-8 border-2 border-[#00FF88] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="text-zinc-500">Loading your profile...</p>
                 </div>
             </div>
@@ -188,7 +211,6 @@ function Dashboard() {
                     </div>
 
                     <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-[#00FF88]/5">
-                        {/* Avatar preview and upload */}
                         <div className="flex flex-col items-center justify-center mb-6">
                             <div className="relative w-24 h-24 mb-3">
                                 <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#00FF88] to-[#00D4FF] flex items-center justify-center text-3xl font-bold text-black border-4 border-zinc-800 overflow-hidden">
@@ -207,54 +229,27 @@ function Dashboard() {
                         </div>
 
                         <form onSubmit={handleOnboardingSubmit} className="space-y-4">
-                            {/* Name */}
                             <div>
-                                <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-                                    Full Name <span className="text-red-500">*</span>
-                                </label>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Full Name <span className="text-red-500">*</span></label>
                                 <input
-                                    type="text"
-                                    required
-                                    maxLength={32}
-                                    value={name}
+                                    type="text" required maxLength={32} value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00FF88] transition-colors"
+                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
                                     placeholder="John Doe"
                                 />
                             </div>
 
-                            {/* Username */}
                             <div>
-                                <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-                                    Username <span className="text-red-500">*</span>
-                                </label>
+                                <label className="block text-sm font-medium text-zinc-400 mb-1.5">Username <span className="text-red-500">*</span></label>
                                 <div className="relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
                                     <input
-                                        type="text"
-                                        required
-                                        maxLength={16}
-                                        value={username}
+                                        type="text" required maxLength={16} value={username}
                                         onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                                        className="w-full bg-black border border-zinc-800 rounded-xl pl-8 pr-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00FF88] transition-colors"
+                                        className="w-full bg-black border border-zinc-800 rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
                                         placeholder="johndoe"
                                     />
                                 </div>
-                                <p className="text-xs text-zinc-600 mt-1">Letters, numbers, underscores only. Max 16 characters.</p>
-                            </div>
-
-                            {/* Avatar URL (optional) */}
-                            <div>
-                                <label className="block text-sm font-medium text-zinc-400 mb-1.5">
-                                    or Avatar URL <span className="text-zinc-600 font-normal">(optional)</span>
-                                </label>
-                                <input
-                                    type="url"
-                                    value={avatarUrl}
-                                    onChange={(e) => setAvatarUrl(e.target.value)}
-                                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-[#00FF88] transition-colors"
-                                    placeholder="https://example.com/avatar.jpg"
-                                />
                             </div>
 
                             {error && (
@@ -263,20 +258,23 @@ function Dashboard() {
                                 </div>
                             )}
 
+                            {walletStatus && (
+                                <div className="flex items-center gap-2 text-[#00FF88] text-xs font-medium animate-pulse px-1">
+                                    <div className="w-2 h-2 rounded-full bg-[#00FF88]"></div>
+                                    {walletStatus}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] hover:opacity-90 text-black font-bold py-3 rounded-xl transition-all mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] hover:opacity-90 text-black font-bold py-3 rounded-xl transition-all mt-2 disabled:opacity-50"
                             >
-                                {isSubmitting ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                        Saving...
-                                    </span>
-                                ) : (
-                                    'Create Profile →'
-                                )}
+                                {isSubmitting ? 'Processing...' : 'Create Profile & Wallet →'}
                             </button>
+                            <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
+                                Secure Non-Custodial Setup via Passkeys
+                            </p>
                         </form>
                     </div>
                 </div>
@@ -302,7 +300,7 @@ function Dashboard() {
                 <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm shadow-xl shadow-[#00FF88]/5">
                         <div className="flex items-center space-x-4 mb-6">
-                            <div className="w-16 h-16 bg-gradient-to-tr from-[#00FF88] to-[#00D4FF] rounded-full flex items-center justify-center text-xl font-bold text-black overflow-hidden">
+                            <div className="w-16 h-16 bg-gradient-to-tr from-[#00FF88] to-[#00D4FF] rounded-full flex items-center justify-center text-xl font-bold text-black overflow-hidden border-2 border-zinc-800">
                                 {profile?.avatar_url ? (
                                     <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                                 ) : (
@@ -321,23 +319,17 @@ function Dashboard() {
                                 <p className="text-sm font-medium text-zinc-300 bg-black/50 p-3 rounded-lg border border-zinc-800">{profile?.email}</p>
                             </div>
                             
-                            {/* Секция для копирования JWT */}
                             {jwt && (
                                 <div>
-                                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Raw JWT (SuperTokens)</p>
+                                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Cloud Session Token</p>
                                     <div className="flex items-center space-x-2">
                                         <input
-                                            type="text"
-                                            readOnly
-                                            value={jwt}
-                                            className="text-sm font-mono text-zinc-400 bg-black/50 p-3 rounded-lg border border-zinc-800 flex-1 w-full outline-none"
+                                            type="text" readOnly value={jwt}
+                                            className="text-sm font-mono text-zinc-500 bg-black/50 p-3 rounded-lg border border-zinc-800 flex-1 outline-none truncate"
                                         />
                                         <button 
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(jwt);
-                                                alert("JWT Copied!");
-                                            }}
-                                            className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-sm font-medium"
+                                            onClick={() => { navigator.clipboard.writeText(jwt); alert("Copied!"); }}
+                                            className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-xs"
                                         >
                                             Copy
                                         </button>
@@ -348,32 +340,30 @@ function Dashboard() {
                     </div>
 
                     <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm flex flex-col justify-center items-center text-center shadow-xl shadow-[#00D4FF]/5">
-                        <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-                            <span className="text-2xl">⚡</span>
+                        <div className="w-12 h-12 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mb-4 border border-[#00FF88]/20">
+                            <span className="text-xl">🛡️</span>
                         </div>
-                        <h2 className="text-xl font-semibold mb-2 text-white">Non-custodial Wallet</h2>
-                        <p className="text-zinc-400 text-sm mx-auto mb-6">
-                            Secure your assets with Passkeys. Only you have access to your keys.
+                        <h2 className="text-xl font-semibold mb-2 text-white">Smart Account</h2>
+                        <p className="text-zinc-400 text-xs mx-auto mb-6">
+                            Managed by Alchemy ERC-4337 Stack. Transaction gas is fully sponsored.
                         </p>
                         
                         {profile?.smart_wallet_address ? (
-                            <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-sm text-[#00FF88] font-mono shadow-inner">
+                            <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-xs text-[#00FF88] font-mono shadow-inner">
                                 {profile.smart_wallet_address}
                             </div>
                         ) : (
                             <button 
-                                onClick={handleCreateWallet}
-                                disabled={isCreatingWallet}
-                                className="px-6 py-3 bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
+                                onClick={handleCreateWallet} disabled={isCreatingWallet}
+                                className="px-6 py-3 bg-[#00FF88] text-black font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
                             >
-                                {isCreatingWallet ? 'Creating...' : 'Create Wallet via Passkey'}
+                                {isCreatingWallet ? 'Creating...' : 'Initialize Wallet'}
                             </button>
                         )}
                     </div>
                 </main>
             </div>
             
-            {/* Невидимый контейнер для Turnkey iframe (нужен Алхимии для работы с подписями) */}
             <div id="turnkey-iframe-container" style={{ display: 'none' }}></div>
         </div>
     );

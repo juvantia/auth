@@ -36,18 +36,27 @@ export async function GET(request: NextRequest) {
                 await dbConnect();
                 const user = await User.findOne({ supertokens_id: session.getUserId() });
 
-                if (!user || !user.name || !user.username) {
-                    return NextResponse.json({ needsOnboarding: true }, { status: 200 });
-                }
-
                 // Получаем email из SuperTokens
                 const userInfo = await supertokens.getUser(session.getUserId());
                 const email = userInfo?.emails[0];
 
                 // Самолечение: если в базе нет почты, записываем её
-                if (email && !user.email) {
+                if (user && email && !user.email) {
                     user.email = email;
                     await user.save();
+                }
+
+                // 3. Если пользователя нет, нет обязательных полей или нет кошелька - на онбординг
+                if (!user || !user.name || !user.username || !user.smart_wallet_address) {
+                    return NextResponse.json({ 
+                        needsOnboarding: true, 
+                        email,
+                        user: user ? {
+                            name: user.name,
+                            username: user.username,
+                            avatar_url: user.avatar_url
+                        } : null
+                    }, { status: 200 });
                 }
 
                 return NextResponse.json({
@@ -79,7 +88,11 @@ export async function POST(request: NextRequest) {
 
         try {
             await dbConnect();
-            const { name, username, avatar_url } = await request.json();
+            const { name, username, avatar_url, smart_wallet_address } = await request.json();
+
+            if (!smart_wallet_address) {
+                return NextResponse.json({ message: "Wallet address is required for onboarding" }, { status: 400 });
+            }
 
             // Получаем актуальный email из SuperTokens
             const userInfo = await supertokens.getUser(session.getUserId());
@@ -94,7 +107,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
             }
 
-            // Умный апдейт: ищем либо по id, либо по почте (если ID сменился, но почта та же - склеиваем)
+            // Умный апдейт: ищем либо по id, либо по почте
             const savedUser = await User.findOneAndUpdate(
                 { $or: [{ supertokens_id: session.getUserId() }, { email }] },
                 { $set: { 
@@ -102,6 +115,7 @@ export async function POST(request: NextRequest) {
                     email, 
                     name, 
                     username, 
+                    smart_wallet_address,
                     ...(avatar_url ? { avatar_url } : {}) 
                 } },
                 { upsert: true, new: true }
