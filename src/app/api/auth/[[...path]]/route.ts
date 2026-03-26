@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse, NextRequest } from "next/server";
 import supertokens from "supertokens-node";
 import { backendConfig } from "@/config/backend";

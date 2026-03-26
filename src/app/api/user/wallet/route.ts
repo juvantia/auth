@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { withSession } from "supertokens-node/nextjs";
 import dbConnect from "@/lib/mongodb";
