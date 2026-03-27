@@ -20,6 +20,20 @@ export const frontendConfig = (): SuperTokensConfig => {
                 // can read the sAccessToken httpOnly cookie for session verification.
                 tokenTransferMethod: "cookie",
             }),
-        ],
-    };
+    ],
+    async getRedirectionURL(context) {
+        if (context.action === "SUCCESS" && typeof window !== "undefined") {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get("auth_redirect");
+            if (redirect === "close") {
+                window.close();
+                return undefined;
+            }
+            if (redirect) {
+                return decodeURIComponent(redirect);
+            }
+        }
+        return undefined;
+    }
+  };
 };
