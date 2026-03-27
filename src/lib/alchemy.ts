@@ -22,6 +22,17 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
             },
           },
         });
+        
+        // Monkey-patch: SDK 3.19.0 не прокидывает idToken в тело signup запроса.
+        // Мы перехватываем внутренний запрос и добавляем idToken вручную.
+        const innerClient = (signer as any).inner;
+        const originalRequest = innerClient.request.bind(innerClient);
+        innerClient.request = async (route: string, body: any) => {
+            if (route === "/v1/signup" && params.idToken) {
+                body.idToken = params.idToken;
+            }
+            return originalRequest(route, body);
+        };
     } else if (!signer) {
         signer = new AlchemyWebSigner({
           client: {
