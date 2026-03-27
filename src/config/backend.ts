@@ -96,7 +96,7 @@ export const backendConfig = (): TypeInput => {
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
                                     // Alchemy custom audience
-                                    aud: "4a1967ea-4ac1-4455-833e-91868af7ecb6",
+                                    aud: "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e",
                                 };
 
                                 if (email) {
