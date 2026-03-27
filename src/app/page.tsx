@@ -24,6 +24,7 @@ function Dashboard() {
     const [jwt, setJwt] = useState<string>('');
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
     const [walletStatus, setWalletStatus] = useState(''); // Tracking status for "hidden" creation
+    const [onboardingStep, setOnboardingStep] = useState<1 | 2>(1);
 
     // Form states
     const [name, setName] = useState('');
@@ -52,6 +53,11 @@ function Dashboard() {
                                 setName(data.user.name || '');
                                 setUsername(data.user.username || '');
                                 setAvatarUrl(data.user.avatar_url || '');
+                                
+                                // Если профиль уже заполнен, но нет кошелька - сразу шаг 2
+                                if (data.user.name && data.user.username && !data.user.smart_wallet_address) {
+                                    setOnboardingStep(2);
+                                }
                             }
                         } else {
                             setProfile(data);
@@ -74,36 +80,57 @@ function Dashboard() {
         e.preventDefault();
         setIsSubmitting(true);
         setError('');
-        setWalletStatus('Initializing secure key storage...');
 
         try {
             if (!jwt) {
                 throw new Error("Authentication session missing. Please refresh the page.");
             }
 
-            setWalletStatus('Saving your secure profile...');
+            if (onboardingStep === 1) {
+                setWalletStatus('Saving your secure profile...');
+                const res = await fetch('/api/user/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined })
+                });
 
-            // 1. Только сохраняем профиль на бэкенд
-            const res = await fetch('/api/user/profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ 
-                    name, 
-                    username, 
-                    avatar_url: avatarUrl || undefined
-                })
-            });
-
-            if (res.ok) {
-                const newProfile = await res.json();
-                setProfile(newProfile);
-                setNeedsOnboarding(false);
+                if (res.ok) {
+                    setOnboardingStep(2);
+                } else {
+                    const data = await res.json();
+                    throw new Error(data.message || 'Error occurred during profile creation');
+                }
             } else {
-                const data = await res.json();
-                throw new Error(data.message || 'Error occurred during onboarding');
+                setWalletStatus('Create your Passkey in the browser popup...');
+                const client = await getSmartAccountClient({
+                    createNew: true,
+                    username: username || "Juvantia_User",
+                    idToken: jwt
+                });
+
+                if (!client) {
+                    throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
+                }
+
+                const address = await client.getAddress();
+                
+                setWalletStatus('Finalizing your account...');
+                const res = await fetch('/api/user/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
+                });
+
+                if (res.ok) {
+                    const newProfile = await res.json();
+                    setProfile(newProfile);
+                    setNeedsOnboarding(false);
+                } else {
+                    const data = await res.json();
+                    throw new Error(data.message || "Error saving wallet address");
+                }
             }
         } catch (err: any) {
             setError(err.message || 'Network error');
@@ -223,28 +250,47 @@ function Dashboard() {
                             </div>
 
                             <form onSubmit={handleOnboardingSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1.5">Full Name <span className="text-red-500">*</span></label>
-                                    <input
-                                        type="text" required maxLength={32} value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
-                                        placeholder="John Doe"
-                                    />
-                                </div>
+                                {onboardingStep === 1 && (
+                                    <>
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Full Name <span className="text-red-500">*</span></label>
+                                            <input
+                                                type="text" required maxLength={32} value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
+                                                placeholder="John Doe"
+                                            />
+                                        </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-400 mb-1.5">Username <span className="text-red-500">*</span></label>
-                                    <div className="relative">
-                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
-                                        <input
-                                            type="text" required maxLength={16} value={username}
-                                            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                                            className="w-full bg-black border border-zinc-800 rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
-                                            placeholder="johndoe"
-                                        />
+                                        <div>
+                                            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Username <span className="text-red-500">*</span></label>
+                                            <div className="relative">
+                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
+                                                <input
+                                                    type="text" required maxLength={16} value={username}
+                                                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                                                    className="w-full bg-black border border-zinc-800 rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
+                                                    placeholder="johndoe"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                {onboardingStep === 2 && (
+                                    <div className="bg-black/50 border border-[#00FF88]/20 p-6 rounded-xl text-center shadow-inner shadow-[#00FF88]/5">
+                                        <div className="w-16 h-16 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#00FF88]/30">
+                                            <span className="text-2xl">🔐</span>
+                                        </div>
+                                        <h3 className="text-lg font-bold text-white mb-2">Create Smart Wallet</h3>
+                                        <p className="text-zinc-400 text-sm mb-4">
+                                            A secure, non-custodial wallet tied to your profile using Passkeys. This allows you to interact with the Juvantia Ecosystem seamlessly.
+                                        </p>
+                                        <div className="text-xs text-[#00FF88] font-medium bg-[#00FF88]/10 py-2 border border-[#00FF88]/20 rounded-lg">
+                                            Gas fees are 100% sponsored.
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {error && (
                                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
@@ -264,12 +310,22 @@ function Dashboard() {
                                     disabled={isSubmitting}
                                     className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold text-lg py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,255,136,0.3)]"
                                 >
-                                    {isSubmitting ? walletStatus || 'Saving...' : 'Create Profile →'}
+                                    {isSubmitting 
+                                        ? walletStatus || 'Processing...' 
+                                        : onboardingStep === 1 ? 'Save Profile →' : 'Initialize Wallet 🚀'}
                                 </button>
-                                <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
-                                Secure Non-Custodial Setup via Passkeys
-                            </p>
-                        </form>
+                                
+                                {onboardingStep === 1 && (
+                                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
+                                        Step 1 of 2: Basic Information
+                                    </p>
+                                )}
+                                {onboardingStep === 2 && (
+                                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
+                                        Step 2 of 2: Secure Non-Custodial Setup via Passkeys
+                                    </p>
+                                )}
+                            </form>
                     </div>
                 </div>
             </div>

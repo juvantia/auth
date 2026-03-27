@@ -46,15 +46,16 @@ export async function GET(request: NextRequest) {
                     await user.save();
                 }
 
-                // 3. Если пользователя нет, или нет обязательных полей (без кошелька) - на онбординг
-                if (!user || !user.name || !user.username) {
+                // 3. Если пользователя нет, или нет обязательных полей (включая кошелек) - на онбординг
+                if (!user || !user.name || !user.username || !user.smart_wallet_address) {
                     return NextResponse.json({ 
                         needsOnboarding: true, 
                         email,
                         user: user ? {
                             name: user.name,
                             username: user.username,
-                            avatar_url: user.avatar_url
+                            avatar_url: user.avatar_url,
+                            smart_wallet_address: user.smart_wallet_address
                         } : null
                     }, { status: 200 });
                 }
