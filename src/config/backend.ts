@@ -78,9 +78,6 @@ export const backendConfig = (): TypeInput => {
                 getTokenTransferMethod: () => "cookie",
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
-                jwt: {
-                    enable: true,
-                },
                 override: {
                     functions: (originalImplementation) => {
                         return {
