@@ -71,52 +71,6 @@ function Dashboard() {
         fetchProfile();
     }, [session]);
 
-    const executeWalletCreation = async () => {
-        if (!jwt) {
-            setError("Session token missing. Please refresh the page.");
-            return;
-        }
-
-        setWalletStatus('Creating your secure ZeroDev wallet...');
-        
-        try {
-            console.log("Juvantia: Initializing ZeroDev Kernel client...");
-            
-            // Мы используем ZeroDev Passkey Validator.
-            const kernelClient = await getKernelClient({
-                username: username || "Juvantia_User",
-                createNew: true
-            });
-
-            if (!kernelClient) {
-                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
-            }
-
-            const address = kernelClient.account.address;
-            console.log("ZeroDev Wallet address:", address);
-            
-            setWalletStatus('Finalizing your account...');
-            const resWallet = await fetch('/api/user/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
-            });
-
-            if (resWallet.ok) {
-                const newProfile = await resWallet.json();
-                setProfile(newProfile);
-                setNeedsOnboarding(false);
-            } else {
-                const dataWallet = await resWallet.json();
-                throw new Error(dataWallet.message || "Error saving wallet address");
-            }
-        } catch (err: any) {
-            console.error("ZeroDev Initialization Error:", err);
-            setError(`Initialization failed: ${err.message || 'Unknown error'}`);
-        }
-    };
-
     const handleOnboardingSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (isSubmitting) return;
