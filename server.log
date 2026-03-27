@@ -12,3 +12,4 @@
 ⨯ Error: No SuperTokens core available to query
     at ignore-listed frames
  POST /api/auth/signinup/code 500 in 2.2s (compile: 1992ms, render: 210ms)
+  Reload env: .env.local
