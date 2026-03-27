@@ -78,6 +78,19 @@ function Dashboard() {
 
     const executeWalletCreation = async () => {
         setWalletStatus('Creating your secure wallet...');
+        console.log("Juvantia Debug: Starting Wallet Init...");
+        console.log("Juvantia Debug: Using JWT:", jwt);
+        
+        // Decode JWT payload for debugging (without signature)
+        try {
+            const payload = JSON.parse(atob(jwt.split('.')[1]));
+            console.log("Juvantia Debug: Decoded JWT Payload:", payload);
+            console.log("Juvantia Debug: Expected Audience:", "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e");
+            console.log("Juvantia Debug: Expected Issuer:", "https://auth.juvantia.org/api/auth/");
+        } catch (e) {
+            console.error("Juvantia Debug: Failed to decode JWT", e);
+        }
+
         const client = await getSmartAccountClient({
             createNew: true,
             username: username || "Juvantia_User",

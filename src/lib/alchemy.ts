@@ -22,6 +22,13 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
         });
     }
     try {
+        console.log("Alchemy Signer: Authenticating with params:", { 
+            type: "passkey", 
+            createNew: params.createNew, 
+            username: params.username,
+            hasIdToken: !!params.idToken 
+        });
+        
         // 1. Создаем Passkey, привязанный к OIDC сессии (Self-Custodial)
         await signer.authenticate({
             type: "passkey",
