@@ -97,10 +97,6 @@ export const backendConfig = (): TypeInput => {
                                     ...input.accessTokenPayload,
                                     // Alchemy custom audience
                                     aud: "a69ce7f3-bd8a-4fe1-abef-8e22ad599f37",
-                                    // Issuer matching the OIDC discovery (MUST matching Alchemy Dashboard exactly)
-                                    iss: "https://auth.juvantia.org/api/auth/",
-                                    // OIDC standard sub (already in payload usually, but good to be explicit if needed)
-                                    sub: input.userId,
                                 };
 
                                 if (email) {
