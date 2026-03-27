@@ -6,7 +6,7 @@ export const ALCHEMY_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || `
 // Экспортируем переменную, но инициализировать будем только в браузере
 export let signer: AlchemyWebSigner | null = null;
 
-export async function getSmartAccountClient(params: { createNew?: boolean; username?: string }) {
+export async function getSmartAccountClient(params: { createNew?: boolean; username?: string; idToken?: string }) {
     if (typeof window === "undefined") return null;
 
     if (!signer) {
@@ -27,6 +27,8 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
             type: "passkey",
             createNew: params.createNew ?? false,
             username: params.username || "Juvantia_User",
+            // Передаем idToken, если он есть, для связки с SuperTokens
+            ...(params.idToken && { idToken: params.idToken }),
         } as any);
 
         // 2. Создаем или получаем Modular Smart Account (ERC-4337)

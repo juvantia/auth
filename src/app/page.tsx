@@ -85,7 +85,8 @@ function Dashboard() {
             setWalletStatus('Create your Passkey in the browser popup...');
             const client = await getSmartAccountClient({
                 createNew: true,
-                username: username || "Juvantia_User"
+                username: username || "Juvantia_User",
+                idToken: jwt // Обязательно передаем JWT для OIDC-валидации в Alchemy
             });
 
             if (!client) {

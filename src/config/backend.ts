@@ -77,6 +77,23 @@ export const backendConfig = (): TypeInput => {
                 getTokenTransferMethod: () => "cookie",
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
+                override: {
+                    functions: (originalImplementation) => {
+                        return {
+                            ...originalImplementation,
+                            createNewSession: async function (input) {
+                                input.accessTokenPayload = {
+                                    ...input.accessTokenPayload,
+                                    // Ключ Audience от Alchemy
+                                    aud: "a69ce7f3-bd8a-4fe1-abef-8e22ad599f37",
+                                    // Issuer должен совпадать с тем, что ввели в Alchemy Dashboard
+                                    iss: "https://auth.juvantia.org/api/auth"
+                                };
+                                return originalImplementation.createNewSession(input);
+                            },
+                        };
+                    },
+                },
             }),
             JWT.init(),
             Dashboard.init(),
