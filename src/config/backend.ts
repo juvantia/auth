@@ -84,10 +84,21 @@ export const backendConfig = (): TypeInput => {
                             ...originalImplementation,
                             createNewSession: async function (input) {
                                 let email = undefined;
+                                let name = undefined;
+                                let avatar_url = undefined;
+
                                 try {
                                     const user = await supertokens.getUser(input.userId);
                                     if (user && user.emails && user.emails.length > 0) {
                                         email = user.emails[0];
+                                    }
+
+                                    // Fetch additional info from our MongoDB User model
+                                    const User = (await import("../models/User")).default;
+                                    const dbUser = await User.findOne({ supertokens_id: input.userId });
+                                    if (dbUser) {
+                                        name = dbUser.name;
+                                        avatar_url = dbUser.avatar_url;
                                     }
                                 } catch (err) {
                                     console.error("Juvantia Auth: Error fetching user in createNewSession", err);
@@ -97,6 +108,8 @@ export const backendConfig = (): TypeInput => {
                                     ...input.accessTokenPayload,
                                     // Alchemy custom audience
                                     aud: "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e",
+                                    name,
+                                    avatar_url
                                 };
 
                                 if (email) {
