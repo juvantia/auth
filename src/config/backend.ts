@@ -83,8 +83,15 @@ export const backendConfig = (): TypeInput => {
                         return {
                             ...originalImplementation,
                             createNewSession: async function (input) {
-                                // Fetch user to get the email
-                                const user = await supertokens.getUser(input.userId);
+                                let email = undefined;
+                                try {
+                                    const user = await supertokens.getUser(input.userId);
+                                    if (user && user.emails && user.emails.length > 0) {
+                                        email = user.emails[0];
+                                    }
+                                } catch (err) {
+                                    console.error("Juvantia Auth: Error fetching user in createNewSession", err);
+                                }
                                 
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
@@ -94,9 +101,12 @@ export const backendConfig = (): TypeInput => {
                                     iss: "https://auth.juvantia.org/api/auth/",
                                     // OIDC standard sub (already in payload usually, but good to be explicit if needed)
                                     sub: input.userId,
-                                    // User email for identification in Alchemy
-                                    email: user?.emails[0] || undefined
                                 };
+
+                                if (email) {
+                                    input.accessTokenPayload.email = email;
+                                }
+
                                 return originalImplementation.createNewSession(input);
                             },
                         };
