@@ -46,8 +46,8 @@ export async function GET(request: NextRequest) {
                     await user.save();
                 }
 
-                // 3. Если пользователя нет, нет обязательных полей или нет кошелька - на онбординг
-                if (!user || !user.name || !user.username || !user.smart_wallet_address) {
+                // 3. Если пользователя нет, или нет обязательных полей (без кошелька) - на онбординг
+                if (!user || !user.name || !user.username) {
                     return NextResponse.json({ 
                         needsOnboarding: true, 
                         email,
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
             await dbConnect();
             const { name, username, avatar_url, smart_wallet_address } = await request.json();
 
-            if (!smart_wallet_address) {
-                return NextResponse.json({ message: "Wallet address is required for onboarding" }, { status: 400 });
+            if (!name || !username) {
+                return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
             }
 
             // Получаем актуальный email из SuperTokens
@@ -108,16 +108,18 @@ export async function POST(request: NextRequest) {
             }
 
             // Умный апдейт: ищем либо по id, либо по почте
+            const setObj: any = { 
+                supertokens_id: session.getUserId(), 
+                email, 
+                name, 
+                username, 
+            };
+            if (smart_wallet_address) setObj.smart_wallet_address = smart_wallet_address;
+            if (avatar_url) setObj.avatar_url = avatar_url;
+
             const savedUser = await User.findOneAndUpdate(
                 { $or: [{ supertokens_id: session.getUserId() }, { email }] },
-                { $set: { 
-                    supertokens_id: session.getUserId(), 
-                    email, 
-                    name, 
-                    username, 
-                    smart_wallet_address,
-                    ...(avatar_url ? { avatar_url } : {}) 
-                } },
+                { $set: setObj },
                 { upsert: true, new: true }
             );
 

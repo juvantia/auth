@@ -81,22 +81,9 @@ function Dashboard() {
                 throw new Error("Authentication session missing. Please refresh the page.");
             }
 
-            // 1. Создаем кошелек (вызовет системное окно Passkey)
-            setWalletStatus('Create your Passkey in the browser popup...');
-            const client = await getSmartAccountClient({
-                createNew: true,
-                username: username || "Juvantia_User",
-                idToken: jwt // Обязательно передаем JWT для OIDC-валидации в Alchemy
-            });
-
-            if (!client) {
-                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
-            }
-
-            const address = await client.getAddress();
             setWalletStatus('Saving your secure profile...');
 
-            // 2. Сохраняем всё одним махом на бэкенд
+            // 1. Только сохраняем профиль на бэкенд
             const res = await fetch('/api/user/profile', {
                 method: 'POST',
                 headers: {
@@ -106,8 +93,7 @@ function Dashboard() {
                 body: JSON.stringify({ 
                     name, 
                     username, 
-                    avatar_url: avatarUrl || undefined,
-                    smart_wallet_address: address 
+                    avatar_url: avatarUrl || undefined
                 })
             });
 
@@ -276,9 +262,9 @@ function Dashboard() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] hover:opacity-90 text-black font-bold py-3 rounded-xl transition-all mt-2 disabled:opacity-50"
+                                    className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold text-lg py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,255,136,0.3)]"
                                 >
-                                    {isSubmitting ? 'Processing...' : 'Create Profile & Wallet →'}
+                                    {isSubmitting ? walletStatus || 'Saving...' : 'Create Profile →'}
                                 </button>
                                 <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
                                 Secure Non-Custodial Setup via Passkeys
