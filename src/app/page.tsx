@@ -77,7 +77,7 @@ function Dashboard() {
     }, [session]);
 
     const executeWalletCreation = async () => {
-        setWalletStatus('Create your Passkey in the browser popup...');
+        setWalletStatus('Creating your secure wallet...');
         const client = await getSmartAccountClient({
             createNew: true,
             username: username || "Juvantia_User",
@@ -303,7 +303,7 @@ function Dashboard() {
                                         </div>
                                         <h3 className="text-lg font-bold text-white mb-2">Create Smart Wallet</h3>
                                         <p className="text-zinc-400 text-sm mb-4">
-                                            A secure, non-custodial wallet tied to your profile using Passkeys. This allows you to interact with the Juvantia Ecosystem seamlessly.
+                                            A secure, non-custodial wallet tied seamlessly to your profile. This allows you to interact with the Juvantia Ecosystem instantly.
                                         </p>
                                         <div className="text-xs text-[#00FF88] font-medium bg-[#00FF88]/10 py-2 border border-[#00FF88]/20 rounded-lg">
                                             Gas fees are 100% sponsored.
@@ -341,7 +341,7 @@ function Dashboard() {
                                 )}
                                 {onboardingStep === 2 && (
                                     <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
-                                        Step 2 of 2: Secure Non-Custodial Setup via Passkeys
+                                        Step 2 of 2: Secure Non-Custodial Setup
                                     </p>
                                 )}
                             </form>

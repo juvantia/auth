@@ -24,12 +24,9 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
     try {
         // 1. Истинный Self-Custodial (WebAuthn / Passkeys), ключи живут на устройстве:
         await signer.authenticate({
-            type: "passkey",
-            createNew: params.createNew ?? false,
-            username: params.username || "Juvantia_User",
-            // Передаем idToken, если он есть, для связки с SuperTokens
-            ...(params.idToken && { idToken: params.idToken }),
-        } as any);
+            type: "jwt",
+            jwt: params.idToken!
+        });
 
         // 2. Создаем или получаем Modular Smart Account (ERC-4337)
         const client = await createModularAccountAlchemyClient({
