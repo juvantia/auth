@@ -203,11 +203,19 @@ function Dashboard() {
             {needsOnboarding ? (
                 <div className="min-h-screen flex items-center justify-center p-4">
                     <div className="max-w-md w-full">
-                        <div className="text-center mb-8">
-                            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#00FF88] to-[#00D4FF] bg-clip-text text-transparent mb-2" style={{ fontFamily: 'var(--font-cinzel)' }}>
-                                Juvantia Auth
-                            </h1>
-                            <p className="text-zinc-400">Complete your profile to continue</p>
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#00FF88] to-[#00D4FF] bg-clip-text text-transparent mb-1" style={{ fontFamily: 'var(--font-cinzel)' }}>
+                                    Juvantia Auth
+                                </h1>
+                                <p className="text-zinc-400 text-sm">Complete your profile to continue</p>
+                            </div>
+                            <button 
+                                onClick={() => signOut()}
+                                className="text-xs font-semibold text-zinc-500 hover:text-white transition-colors border border-zinc-800 px-3 py-1.5 rounded-lg hover:bg-zinc-800"
+                            >
+                                Sign Out
+                            </button>
                         </div>
 
                         <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-[#00FF88]/5">

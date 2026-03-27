@@ -3,6 +3,7 @@ import Session from "supertokens-node/recipe/session";
 import { TypeInput } from "supertokens-node/types";
 import Dashboard from "supertokens-node/recipe/dashboard";
 import JWT from "supertokens-node/recipe/jwt";
+import supertokens from "supertokens-node";
 
 export const backendConfig = (): TypeInput => {
     return {
@@ -77,17 +78,27 @@ export const backendConfig = (): TypeInput => {
                 getTokenTransferMethod: () => "cookie",
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
+                jwt: {
+                    enable: true,
+                },
                 override: {
                     functions: (originalImplementation) => {
                         return {
                             ...originalImplementation,
                             createNewSession: async function (input) {
+                                // Fetch user to get the email
+                                const user = await supertokens.getUser(input.userId);
+                                
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
-                                    // Ключ Audience от Alchemy
+                                    // Alchemy custom audience
                                     aud: "a69ce7f3-bd8a-4fe1-abef-8e22ad599f37",
-                                    // Issuer должен совпадать с тем, что ввели в Alchemy Dashboard
-                                    iss: "https://auth.juvantia.org/api/auth"
+                                    // Issuer matching the OIDC discovery (MUST matching Alchemy Dashboard exactly)
+                                    iss: "https://auth.juvantia.org/api/auth/",
+                                    // OIDC standard sub (already in payload usually, but good to be explicit if needed)
+                                    sub: input.userId,
+                                    // User email for identification in Alchemy
+                                    email: user?.emails[0] || undefined
                                 };
                                 return originalImplementation.createNewSession(input);
                             },
