@@ -23,8 +23,7 @@ function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [jwt, setJwt] = useState<string>('');
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
-    const [walletStatus, setWalletStatus] = useState(''); // Tracking status for "hidden" creation
-    const [onboardingStep, setOnboardingStep] = useState<1 | 2>(1);
+    const [walletStatus, setWalletStatus] = useState(''); 
 
     // Form states
     const [name, setName] = useState('');
@@ -50,14 +49,9 @@ function Dashboard() {
                             setNeedsOnboarding(true);
                             // Предзаполнение полей, если запись в базе уже частично была
                             if (data.user) {
-                                setName(data.user.name || '');
+                                 setName(data.user.name || '');
                                 setUsername(data.user.username || '');
                                 setAvatarUrl(data.user.avatar_url || '');
-                                
-                                // Если профиль уже заполнен, но нет кошелька - сразу шаг 2
-                                if (data.user.name && data.user.username && !data.user.smart_wallet_address) {
-                                    setOnboardingStep(2);
-                                }
                             }
                         } else {
                             setProfile(data);
@@ -125,38 +119,60 @@ function Dashboard() {
     const handleOnboardingSubmit = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (isSubmitting) return;
+        
+        if (!name || !username) {
+            setError("Please fill in all required fields.");
+            return;
+        }
+
         setIsSubmitting(true);
         setError('');
+        setWalletStatus('Initializing secure Passkey...');
 
         try {
             if (!jwt) throw new Error("Authentication session missing. Please refresh the page.");
 
-            if (onboardingStep === 1) {
-                setWalletStatus('Saving your secure profile...');
-                const resProfile = await fetch('/api/user/profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined })
-                });
+            // 1. Сначала создаем Passkey и получаем смарт-аккаунт
+            console.log("Juvantia: Initializing ZeroDev Kernel client...");
+            const kernelClient = await getKernelClient({
+                username: username,
+                createNew: true
+            });
 
-                if (resProfile.ok) {
-                    setOnboardingStep(2);
-                    // Chrome allows WebAuthn after a short fetch; Safari might block.
-                    // We run it automatically. If it fails, the user will see the Step 2 button to retry.
-                    await executeWalletCreation();
-                } else {
-                    const dataProfile = await resProfile.json();
-                    throw new Error(dataProfile.message || 'Error occurred during profile creation');
-                }
+            if (!kernelClient) {
+                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
+            }
+
+            const address = kernelClient.account.address;
+            console.log("ZeroDev Wallet address created:", address);
+            
+            // 2. Только после успеха Passkey сохраняем всё в базу одним запросом
+            setWalletStatus('Finalizing your account...');
+            const res = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ 
+                    name, 
+                    username, 
+                    avatar_url: avatarUrl || undefined, 
+                    smart_wallet_address: address 
+                })
+            });
+
+            if (res.ok) {
+                const newProfile = await res.json();
+                setProfile(newProfile);
+                setNeedsOnboarding(false);
             } else {
-                await executeWalletCreation();
+                const data = await res.json();
+                throw new Error(data.message || 'Error occurred during account creation');
             }
         } catch (err: any) {
-            // "NotAllowedError" usually means the browser blocked the WebAuthn popup without a direct click.
-            // In that case, we stay on Step 2 and let them click the manual button.
+            console.error("Onboarding Error:", err);
+            // Если пользователь отменил Passkey (NotAllowedError), просто сбрасываем статус
             if (err.name === 'NotAllowedError' || err.message.includes('NotAllowedError') || err.message.includes('user activation')) {
-                setWalletStatus('');
+                setError("Wallet creation is required. Please try again.");
             } else {
                 setError(err.message || 'Network error');
             }
@@ -166,46 +182,7 @@ function Dashboard() {
         }
     };
 
-    // Auto-trigger wallet creation if they dropped off at step 2 and returned
-    useEffect(() => {
-        if (onboardingStep === 2 && jwt && !profile?.smart_wallet_address && !isSubmitting) {
-            handleOnboardingSubmit();
-        }
-    }, [onboardingStep, jwt]);
 
-    const handleCreateWallet = async () => {
-        // Резервный метод на случай, если кошелек не создался при онбординге
-        if (!jwt) {
-            alert("No JWT token available. Please try signing out and signing back in.");
-            return;
-        }
-        setIsCreatingWallet(true);
-        try {
-            const kernelClient = await getKernelClient({
-                username: profile?.username || "Juvantia_User",
-                createNew: true
-            });
-            if (kernelClient) {
-                const address = kernelClient.account.address;
-                
-                const res = await fetch('/api/user/wallet', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ smart_wallet_address: address })
-                });
-
-                if (res.ok) {
-                    setProfile(prev => prev ? { ...prev, smart_wallet_address: address } : null);
-                    alert("✅ ZeroDev Wallet successfully created!");
-                }
-            }
-        } catch (err: any) {
-            console.error(err);
-            alert("Wallet creation failed: " + err.message);
-        } finally {
-            setIsCreatingWallet(false);
-        }
-    };
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -283,8 +260,7 @@ function Dashboard() {
                             </div>
 
                             <form onSubmit={handleOnboardingSubmit} className="space-y-4">
-                                {onboardingStep === 1 && (
-                                    <>
+                                    <div className="space-y-4">
                                         <div>
                                             <label className="block text-sm font-medium text-zinc-400 mb-1.5">Full Name <span className="text-red-500">*</span></label>
                                             <input
@@ -307,23 +283,20 @@ function Dashboard() {
                                                 />
                                             </div>
                                         </div>
-                                    </>
-                                )}
+                                    </div>
 
-                                {onboardingStep === 2 && (
-                                    <div className="bg-black/50 border border-[#00FF88]/20 p-6 rounded-xl text-center shadow-inner shadow-[#00FF88]/5">
-                                        <div className="w-16 h-16 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mx-auto mb-4 border border-[#00FF88]/30">
-                                            <span className="text-2xl">🔐</span>
+                                    <div className="bg-black/50 border border-[#00FF88]/20 p-6 rounded-xl text-center shadow-inner shadow-[#00FF88]/5 mt-6">
+                                        <div className="w-12 h-12 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mx-auto mb-3 border border-[#00FF88]/30">
+                                            <span className="text-xl">🔐</span>
                                         </div>
-                                        <h3 className="text-lg font-bold text-white mb-2">Create Smart Wallet</h3>
-                                        <p className="text-zinc-400 text-sm mb-4">
-                                            A secure, non-custodial wallet tied seamlessly to your profile. This allows you to interact with the Juvantia Ecosystem instantly.
+                                        <h3 className="text-md font-bold text-white mb-1">Passkey Secure Wallet</h3>
+                                        <p className="text-zinc-500 text-[10px] mb-2 leading-tight">
+                                            A mandatory secure wallet will be created using your device's biometric authentication. No seed phrases required.
                                         </p>
-                                        <div className="text-xs text-[#00FF88] font-medium bg-[#00FF88]/10 py-2 border border-[#00FF88]/20 rounded-lg">
-                                            Gas fees are 100% sponsored.
+                                        <div className="text-[10px] text-[#00FF88] font-medium bg-[#00FF88]/10 py-1.5 border border-[#00FF88]/20 rounded-lg">
+                                            Gas fees are 100% sponsored by Juvantia.
                                         </div>
                                     </div>
-                                )}
 
                                 {error && (
                                     <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
@@ -345,19 +318,12 @@ function Dashboard() {
                                 >
                                     {isSubmitting 
                                         ? walletStatus || 'Processing...' 
-                                        : onboardingStep === 1 ? 'Save Profile →' : 'Initialize Wallet 🚀'}
+                                        : 'Complete Setup 🚀'}
                                 </button>
                                 
-                                {onboardingStep === 1 && (
-                                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
-                                        Step 1 of 2: Basic Information
-                                    </p>
-                                )}
-                                {onboardingStep === 2 && (
-                                    <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
-                                        Step 2 of 2: Secure Non-Custodial Setup
-                                    </p>
-                                )}
+                                <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
+                                    Secure Account & Wallet Initialization
+                                </p>
                             </form>
                     </div>
                 </div>
@@ -423,23 +389,9 @@ function Dashboard() {
                                 <div className="w-12 h-12 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mb-4 border border-[#00FF88]/20">
                                     <span className="text-xl">🛡️</span>
                                 </div>
-                                <h2 className="text-xl font-semibold mb-2 text-white">Smart Account</h2>
-                                <p className="text-zinc-400 text-xs mx-auto mb-6">
-                                    Managed by Alchemy ERC-4337 Stack. Transaction gas is fully sponsored.
-                                </p>
-                                
-                                {profile?.smart_wallet_address ? (
-                                    <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-xs text-[#00FF88] font-mono shadow-inner">
-                                        {profile.smart_wallet_address}
-                                    </div>
-                                ) : (
-                                    <button 
-                                        onClick={handleCreateWallet} disabled={isCreatingWallet}
-                                        className="px-6 py-3 bg-[#00FF88] text-black font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50"
-                                    >
-                                        {isCreatingWallet ? 'Creating...' : 'Initialize Wallet'}
-                                    </button>
-                                )}
+                                <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-xs text-[#00FF88] font-mono shadow-inner">
+                                    {profile?.smart_wallet_address || 'Address not initialized'}
+                                </div>
                             </div>
                         </main>
                     </div>
