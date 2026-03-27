@@ -14,6 +14,7 @@ interface UserProfile {
     email?: string;
     avatar_url?: string;
     smart_wallet_address?: string;
+    passkeys?: string[];
 }
 
 function Dashboard() {
@@ -134,15 +135,16 @@ function Dashboard() {
 
             // 1. Сначала создаем Passkey и получаем смарт-аккаунт
             console.log("Juvantia: Initializing ZeroDev Kernel client...");
-            const kernelClient = await getKernelClient({
+            const kernelResult = await getKernelClient({
                 username: username,
                 createNew: true
             });
 
-            if (!kernelClient) {
+            if (!kernelResult) {
                 throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
             }
 
+            const { client: kernelClient, pubKey } = kernelResult;
             const address = kernelClient.account.address;
             console.log("ZeroDev Wallet address created:", address);
             
@@ -156,7 +158,8 @@ function Dashboard() {
                     name, 
                     username, 
                     avatar_url: avatarUrl || undefined, 
-                    smart_wallet_address: address 
+                    smart_wallet_address: address,
+                    passkey: pubKey // Сохраняем публичный ключ устройства
                 })
             });
 
@@ -385,12 +388,48 @@ function Dashboard() {
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm flex flex-col justify-center items-center text-center shadow-xl shadow-[#00D4FF]/5">
-                                <div className="w-12 h-12 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mb-4 border border-[#00FF88]/20">
-                                    <span className="text-xl">🛡️</span>
+                            <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm shadow-xl shadow-[#00D4FF]/5">
+                                <div className="flex items-center space-x-3 mb-6">
+                                    <div className="w-10 h-10 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center border border-[#00FF88]/20">
+                                        <span className="text-lg">🛡️</span>
+                                    </div>
+                                    <h2 className="text-xl font-bold text-white">Smart Account</h2>
                                 </div>
-                                <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-xs text-[#00FF88] font-mono shadow-inner">
-                                    {profile?.smart_wallet_address || 'Address not initialized'}
+                                
+                                <div className="space-y-6">
+                                    <div>
+                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Wallet Address</p>
+                                        <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-[10px] text-[#00FF88] font-mono shadow-inner">
+                                            {profile?.smart_wallet_address || 'Not initialized'}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Linked Devices (Passkeys)</p>
+                                        <div className="space-y-2">
+                                            {profile?.passkeys && profile.passkeys.length > 0 ? (
+                                                profile.passkeys.map((pk, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between bg-black/30 border border-zinc-800 p-3 rounded-lg">
+                                                        <div className="flex items-center space-x-3">
+                                                            <span className="text-lg">📱</span>
+                                                            <div>
+                                                                <p className="text-[10px] text-white font-medium">Device #{idx + 1}</p>
+                                                                <p className="text-[9px] text-zinc-500 font-mono truncate w-48">{pk}</p>
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-[8px] bg-[#00FF88]/10 text-[#00FF88] px-2 py-0.5 rounded border border-[#00FF88]/20">Active</span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-zinc-600 italic">No specific keys recorded yet.</p>
+                                            )}
+                                            
+                                            <button className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-[#00FF88] hover:border-[#00FF88] transition-all flex items-center justify-center gap-2 group">
+                                                <span className="text-lg group-hover:scale-110 transition-transform">+</span>
+                                                Add New Device
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </main>

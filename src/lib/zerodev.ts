@@ -1,9 +1,7 @@
 import {
     createKernelAccount,
     createKernelAccountClient,
-    createZeroDevPaymasterClient
 } from "@zerodev/sdk";
-import { getSocialValidator } from "@zerodev/social-validator";
 import { toPasskeyValidator, PasskeyValidatorContractVersion } from "@zerodev/passkey-validator";
 import { toWebAuthnKey, WebAuthnMode } from "@zerodev/webauthn-key";
 import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
@@ -14,28 +12,27 @@ const PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || "5e727b99-00c4-
 const BUNDLER_URL = `https://rpc.zerodev.app/api/v3/${PROJECT_ID}/chain/84532`;
 const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${PROJECT_ID}`;
 
-const publicClient = createPublicClient({
-    chain: baseSepolia as Chain,
-    transport: http()
-});
-
-const entryPoint = getEntryPoint("0.7");
-
 export async function getKernelClient(params: {
-    idToken?: string;
     username?: string;
     createNew?: boolean
 }) {
     if (typeof window === "undefined") return null;
 
     try {
-        let validator;
+        const publicClient = createPublicClient({
+            chain: baseSepolia as Chain,
+            transport: http(BUNDLER_URL),
+        });
+
+        const entryPoint = getEntryPoint("0.7");
+        let validator: any;
+        let webAuthnKey: any;
 
         if (params.username) {
             // Режим Passkey (WebAuthn) - Kernel v3 Style
             const rpID = window.location.hostname === "localhost" ? "localhost" : "auth.juvantia.org";
             
-            const webAuthnKey = await toWebAuthnKey({
+            webAuthnKey = await toWebAuthnKey({
                 passkeyName: params.username,
                 rpID,
                 passkeyServerUrl: `https://passkeys.zerodev.app/api/v3/${PROJECT_ID}`,
@@ -48,14 +45,9 @@ export async function getKernelClient(params: {
                 kernelVersion: KERNEL_V3_1,
                 validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2_UNPATCHED,
             });
-        } else if (params.idToken) {
-            // Режим OIDC (Social Login)
-            console.log("ZeroDev: Initializing Social Validator with ID Token...");
-            // ПРИМЕЧАНИЕ: getSocialValidator из @zerodev/social-validator требует Magic.
-            // Если мы хотим кастомный JWT без Magic, нужно использовать другой плагин.
-            // Но для старта попробуем упростить до Passkey, как и хотел пользователь.
-            throw new Error("OIDC via Social Validator requires Magic redirect. Use Passkey instead.");
-        } else {
+        }
+
+        if (!validator) {
             throw new Error("Username must be provided for Passkey creation");
         }
 
@@ -69,19 +61,36 @@ export async function getKernelClient(params: {
         });
 
         // Создаем клиент для взаимодействия с аккаунтом
-        const kernelClient = createKernelAccountClient({
+        const client = createKernelAccountClient({
             account,
             chain: baseSepolia as Chain,
             bundlerTransport: http(BUNDLER_URL),
-            paymaster: createZeroDevPaymasterClient({
-                chain: baseSepolia as Chain,
-                transport: http(PAYMASTER_URL),
-            }),
+            paymaster: {
+                getPaymasterData: async (userOperation) => {
+                    const res = await fetch(PAYMASTER_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            jsonrpc: "2.0",
+                            id: 1,
+                            method: "zd_sponsorUserOperation",
+                            params: [userOperation, entryPoint],
+                        }),
+                    });
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error.message);
+                    return data.result;
+                },
+            },
         });
 
-        return kernelClient;
-    } catch (err) {
+        return {
+            client,
+            pubKey: (webAuthnKey as any)?.publicKeyId || (validator as any).getIdentifier?.() || (validator as any).id || "Passkey_ID"
+        };
+
+    } catch (err: any) {
         console.error("ZeroDev Client Init Failed:", err);
-        throw err;
+        return null;
     }
 }

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
         try {
             await dbConnect();
-            const { name, username, avatar_url, smart_wallet_address } = await request.json();
+            const { name, username, avatar_url, smart_wallet_address, passkey } = await request.json();
 
             if (!name || !username) {
                 return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
@@ -118,9 +118,16 @@ export async function POST(request: NextRequest) {
             if (smart_wallet_address) setObj.smart_wallet_address = smart_wallet_address;
             if (avatar_url) setObj.avatar_url = avatar_url;
 
+            const updateOptions: any = { $set: setObj };
+            
+            // Если передан новый ключ устройства - добавляем в список
+            if (passkey) {
+                updateOptions.$addToSet = { passkeys: passkey };
+            }
+
             const savedUser = await User.findOneAndUpdate(
                 { $or: [{ supertokens_id: session.getUserId() }, { email }] },
-                { $set: setObj },
+                updateOptions,
                 { upsert: true, new: true }
             );
 

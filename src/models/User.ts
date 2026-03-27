@@ -7,6 +7,7 @@ export interface IUser extends Document {
   username: string;
   avatar_url?: string;
   smart_wallet_address?: string;
+  passkeys: string[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +26,7 @@ const UserSchema: Schema = new Schema(
     },
     avatar_url: { type: String },
     smart_wallet_address: { type: String, unique: true, sparse: true },
+    passkeys: { type: [String], default: [] },
   },
   { timestamps: true }
 );
