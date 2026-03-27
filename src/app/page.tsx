@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/session';
 import Session from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
-import { getSmartAccountClient } from '@/lib/alchemy';
-import { sha256 } from 'viem';
+import { getKernelClient } from '@/lib/zerodev';
 
 interface UserProfile {
     _id: string;
@@ -78,45 +77,28 @@ function Dashboard() {
     }, [session]);
 
     const executeWalletCreation = async () => {
-        setWalletStatus('Creating your secure wallet...');
+        if (!jwt) {
+            setError("Session token missing. Please refresh the page.");
+            return;
+        }
+
+        setWalletStatus('Creating your secure ZeroDev wallet...');
         
         try {
-            // 1. Инициализируем iframe для получения публичного ключа
-            console.log("Juvantia Bridge: Initializing Iframe...");
-            const tempClient = await getSmartAccountClient({ skipAuth: true });
-            const innerClient = (tempClient as any).inner;
-            const publicKey = await innerClient.initIframeStamper();
-            console.log("Juvantia Bridge: Public Key obtained:", publicKey);
-
-            // 2. Хешируем ключ для создания nonce (правило Алхимии)
-            const nonce = sha256(publicKey as `0x${string}`).replace('0x', '');
-            console.log("Juvantia Bridge: Generated Nonce:", nonce);
-
-            // 3. Запрашиваем "мостовой" токен у нашего бэкенда
-            console.log("Juvantia Bridge: Fetching bridge token...");
-            const bridgeRes = await fetch('/api/auth/token-for-alchemy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nonce })
-            });
-
-            if (!bridgeRes.ok) throw new Error("Failed to get bridge token from backend");
-            const { token: bridgeToken } = await bridgeRes.json();
-            console.log("Juvantia Bridge: Bridge Token received!");
-
-            // 4. Создаем кошелек, используя перевыпущенный токен
-            const client = await getSmartAccountClient({
-                createNew: true,
+            console.log("Juvantia: Initializing ZeroDev Kernel client...");
+            
+            // Мы используем ZeroDev Passkey Validator.
+            const kernelClient = await getKernelClient({
                 username: username || "Juvantia_User",
-                idToken: bridgeToken
+                createNew: true
             });
 
-            if (!client) {
+            if (!kernelClient) {
                 throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
             }
 
-            const address = await client.getAddress();
-            console.log("Juvantia Bridge: Wallet address:", address);
+            const address = kernelClient.account.address;
+            console.log("ZeroDev Wallet address:", address);
             
             setWalletStatus('Finalizing your account...');
             const resWallet = await fetch('/api/user/profile', {
@@ -135,7 +117,7 @@ function Dashboard() {
                 throw new Error(dataWallet.message || "Error saving wallet address");
             }
         } catch (err: any) {
-            console.error("Juvantia Bridge Error:", err);
+            console.error("ZeroDev Initialization Error:", err);
             setError(`Initialization failed: ${err.message || 'Unknown error'}`);
         }
     };
@@ -199,12 +181,12 @@ function Dashboard() {
         }
         setIsCreatingWallet(true);
         try {
-            const client = await getSmartAccountClient({
-                createNew: true,
-                username: profile?.username || "Juvantia_User"
+            const kernelClient = await getKernelClient({
+                username: profile?.username || "Juvantia_User",
+                createNew: true
             });
-            if (client) {
-                const address = await client.getAddress();
+            if (kernelClient) {
+                const address = kernelClient.account.address;
                 
                 const res = await fetch('/api/user/wallet', {
                     method: 'POST',
@@ -214,7 +196,7 @@ function Dashboard() {
 
                 if (res.ok) {
                     setProfile(prev => prev ? { ...prev, smart_wallet_address: address } : null);
-                    alert("✅ Wallet successfully created!");
+                    alert("✅ ZeroDev Wallet successfully created!");
                 }
             }
         } catch (err: any) {
