@@ -37,7 +37,7 @@ export async function getKernelClient(params: {
 
             const webAuthnKey = await toWebAuthnKey({
                 passkeyName: params.username,
-                rpID: window.location.hostname,
+                rpID: window.location.hostname === "localhost" ? "localhost" : "auth.juvantia.org",
                 passkeyServerUrl: `https://passkeys.zerodev.app/api/v3/${PROJECT_ID}`,
                 mode: params.createNew ? WebAuthnMode.Register : WebAuthnMode.Login,
             });
