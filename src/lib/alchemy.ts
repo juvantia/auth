@@ -22,11 +22,20 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
         });
     }
     try {
-        // 1. Истинный Self-Custodial (WebAuthn / Passkeys), ключи живут на устройстве:
+        // 1. Истинный Self-Custodial, ключи живут на устройстве или в анклаве:
         await signer.authenticate({
             type: "jwt",
             jwt: params.idToken!
         } as any);
+
+        // По желанию пользователя добавляем аппаратный Passkey к OIDC сессии:
+        if (params.createNew) {
+            try {
+                await signer.addPasskey();
+            } catch (pkErr) {
+                console.warn("User aborted or failed passkey creation, continuing with OIDC Enclave fallback:", pkErr);
+            }
+        }
 
         // 2. Создаем или получаем Modular Smart Account (ERC-4337)
         const client = await createModularAccountAlchemyClient({

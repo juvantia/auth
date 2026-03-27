@@ -31,7 +31,7 @@ export const backendConfig = (): TypeInput => {
                             ...originalImplementation,
                             sendEmail: async (input) => {
                                 console.log("OTP Code locally:", input.userInputCode);
-                                
+
                                 const nodemailer = require("nodemailer");
 
                                 const transporter = nodemailer.createTransport({
@@ -71,8 +71,8 @@ export const backendConfig = (): TypeInput => {
             }),
             Session.init({
                 // SSO cookie domain: only set for production
-                cookieDomain: (!process.env.NEXT_PUBLIC_API_DOMAIN || process.env.NEXT_PUBLIC_API_DOMAIN.includes("localhost")) 
-                    ? undefined 
+                cookieDomain: (!process.env.NEXT_PUBLIC_API_DOMAIN || process.env.NEXT_PUBLIC_API_DOMAIN.includes("localhost"))
+                    ? undefined
                     : ".juvantia.org",
                 // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
@@ -92,11 +92,11 @@ export const backendConfig = (): TypeInput => {
                                 } catch (err) {
                                     console.error("Juvantia Auth: Error fetching user in createNewSession", err);
                                 }
-                                
+
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
                                     // Alchemy custom audience
-                                    aud: "a69ce7f3-bd8a-4fe1-abef-8e22ad599f37",
+                                    aud: "4a1967ea-4ac1-4455-833e-91868af7ecb6",
                                 };
 
                                 if (email) {
