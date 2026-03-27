@@ -5,6 +5,7 @@ import { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/se
 import Session from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
 import { getSmartAccountClient } from '@/lib/alchemy';
+import { sha256 } from 'viem';
 
 interface UserProfile {
     _id: string;
@@ -78,53 +79,64 @@ function Dashboard() {
 
     const executeWalletCreation = async () => {
         setWalletStatus('Creating your secure wallet...');
-        console.log("Juvantia Debug: Starting Wallet Init...");
-        console.log("Juvantia Debug: Using JWT:", jwt);
         
-        // Decode JWT header and payload for debugging
         try {
-            const parts = jwt.split('.');
-            const header = JSON.parse(atob(parts[0]));
-            const payload = JSON.parse(atob(parts[1]));
-            console.log("Juvantia Debug: JWT Header:", header);
-            console.log("Juvantia Debug: Decoded JWT Payload:", payload);
-            console.log("Juvantia Debug: Expected Audience:", "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e");
-            console.log("Juvantia Debug: Expected Issuer:", "https://auth.juvantia.org/api/auth/");
-            
-            if (!header.kid) {
-                console.error("Juvantia Debug: CRITICAL - JWT Header is missing 'kid' field!");
+            // 1. Инициализируем iframe для получения публичного ключа
+            console.log("Juvantia Bridge: Initializing Iframe...");
+            const tempClient = await getSmartAccountClient({ createNew: true });
+            const innerClient = (tempClient as any).inner;
+            const publicKey = await innerClient.initIframeStamper();
+            console.log("Juvantia Bridge: Public Key obtained:", publicKey);
+
+            // 2. Хешируем ключ для создания nonce (правило Алхимии)
+            const nonce = sha256(publicKey as `0x${string}`).replace('0x', '');
+            console.log("Juvantia Bridge: Generated Nonce:", nonce);
+
+            // 3. Запрашиваем "мостовой" токен у нашего бэкенда
+            console.log("Juvantia Bridge: Fetching bridge token...");
+            const bridgeRes = await fetch('/api/auth/token-for-alchemy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nonce })
+            });
+
+            if (!bridgeRes.ok) throw new Error("Failed to get bridge token from backend");
+            const { token: bridgeToken } = await bridgeRes.json();
+            console.log("Juvantia Bridge: Bridge Token received!");
+
+            // 4. Создаем кошелек, используя перевыпущенный токен
+            const client = await getSmartAccountClient({
+                createNew: true,
+                username: username || "Juvantia_User",
+                idToken: bridgeToken
+            });
+
+            if (!client) {
+                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
             }
-        } catch (e) {
-            console.error("Juvantia Debug: Failed to decode JWT", e);
-        }
 
-        const client = await getSmartAccountClient({
-            createNew: true,
-            username: username || "Juvantia_User",
-            idToken: jwt
-        });
+            const address = await client.getAddress();
+            console.log("Juvantia Bridge: Wallet address:", address);
+            
+            setWalletStatus('Finalizing your account...');
+            const resWallet = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
+            });
 
-        if (!client) {
-            throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
-        }
-
-        const address = await client.getAddress();
-        
-        setWalletStatus('Finalizing your account...');
-        const resWallet = await fetch('/api/user/profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
-        });
-
-        if (resWallet.ok) {
-            const newProfile = await resWallet.json();
-            setProfile(newProfile);
-            setNeedsOnboarding(false);
-        } else {
-            const dataWallet = await resWallet.json();
-            throw new Error(dataWallet.message || "Error saving wallet address");
+            if (resWallet.ok) {
+                const newProfile = await resWallet.json();
+                setProfile(newProfile);
+                setNeedsOnboarding(false);
+            } else {
+                const dataWallet = await resWallet.json();
+                throw new Error(dataWallet.message || "Error saving wallet address");
+            }
+        } catch (err: any) {
+            console.error("Juvantia Bridge Error:", err);
+            setError(`Initialization failed: ${err.message || 'Unknown error'}`);
         }
     };
 
