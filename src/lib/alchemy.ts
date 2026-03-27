@@ -6,7 +6,7 @@ export const ALCHEMY_RPC_URL = process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || `
 // Экспортируем переменную, но инициализировать будем только в браузере
 export let signer: AlchemyWebSigner | null = null;
 
-export async function getSmartAccountClient(params: { createNew?: boolean; username?: string; idToken?: string }) {
+export async function getSmartAccountClient(params: { createNew?: boolean; username?: string; idToken?: string; skipAuth?: boolean }) {
     if (typeof window === "undefined") return null;
 
     // Всегда (пере)инициализируем signer, если пришел idToken (OIDC/BYO Auth)
@@ -45,6 +45,14 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
           },
         });
     }
+    if (params.skipAuth) {
+        return signer;
+    }
+
+    if (!signer) {
+        throw new Error("Signer not initialized");
+    }
+
     try {
         console.log("Alchemy Signer: Authenticating with params:", { 
             type: "passkey", 

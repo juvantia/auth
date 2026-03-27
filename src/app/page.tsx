@@ -83,7 +83,7 @@ function Dashboard() {
         try {
             // 1. Инициализируем iframe для получения публичного ключа
             console.log("Juvantia Bridge: Initializing Iframe...");
-            const tempClient = await getSmartAccountClient({ createNew: true });
+            const tempClient = await getSmartAccountClient({ skipAuth: true });
             const innerClient = (tempClient as any).inner;
             const publicKey = await innerClient.initIframeStamper();
             console.log("Juvantia Bridge: Public Key obtained:", publicKey);
