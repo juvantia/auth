@@ -33,11 +33,19 @@ export async function getKernelClient(params: {
 
         if (params.username) {
             // Режим Passkey (WebAuthn) - Kernel v3 Style
-            console.log("ZeroDev: Initializing Passkey Validator for:", params.username);
-
+            const hostname = typeof window !== "undefined" ? window.location.hostname : "unknown";
+            const rpID = hostname === "localhost" ? "localhost" : "auth.juvantia.org";
+            
+            console.log("ZeroDev DEBUG: Initializing Passkey Validator", {
+                username: params.username,
+                hostname,
+                rpID,
+                passkeyServerUrl: `https://passkeys.zerodev.app/api/v3/${PROJECT_ID}`
+            });
+            
             const webAuthnKey = await toWebAuthnKey({
                 passkeyName: params.username,
-                rpID: window.location.hostname === "localhost" ? "localhost" : "auth.juvantia.org",
+                rpID,
                 passkeyServerUrl: `https://passkeys.zerodev.app/api/v3/${PROJECT_ID}`,
                 mode: params.createNew ? WebAuthnMode.Register : WebAuthnMode.Login,
             });
