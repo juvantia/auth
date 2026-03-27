@@ -81,12 +81,19 @@ function Dashboard() {
         console.log("Juvantia Debug: Starting Wallet Init...");
         console.log("Juvantia Debug: Using JWT:", jwt);
         
-        // Decode JWT payload for debugging (without signature)
+        // Decode JWT header and payload for debugging
         try {
-            const payload = JSON.parse(atob(jwt.split('.')[1]));
+            const parts = jwt.split('.');
+            const header = JSON.parse(atob(parts[0]));
+            const payload = JSON.parse(atob(parts[1]));
+            console.log("Juvantia Debug: JWT Header:", header);
             console.log("Juvantia Debug: Decoded JWT Payload:", payload);
             console.log("Juvantia Debug: Expected Audience:", "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e");
             console.log("Juvantia Debug: Expected Issuer:", "https://auth.juvantia.org/api/auth/");
+            
+            if (!header.kid) {
+                console.error("Juvantia Debug: CRITICAL - JWT Header is missing 'kid' field!");
+            }
         } catch (e) {
             console.error("Juvantia Debug: Failed to decode JWT", e);
         }
