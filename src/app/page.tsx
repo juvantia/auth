@@ -76,69 +76,88 @@ function Dashboard() {
         fetchProfile();
     }, [session]);
 
-    const handleOnboardingSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const executeWalletCreation = async () => {
+        setWalletStatus('Create your Passkey in the browser popup...');
+        const client = await getSmartAccountClient({
+            createNew: true,
+            username: username || "Juvantia_User",
+            idToken: jwt
+        });
+
+        if (!client) {
+            throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
+        }
+
+        const address = await client.getAddress();
+        
+        setWalletStatus('Finalizing your account...');
+        const resWallet = await fetch('/api/user/profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
+        });
+
+        if (resWallet.ok) {
+            const newProfile = await resWallet.json();
+            setProfile(newProfile);
+            setNeedsOnboarding(false);
+        } else {
+            const dataWallet = await resWallet.json();
+            throw new Error(dataWallet.message || "Error saving wallet address");
+        }
+    };
+
+    const handleOnboardingSubmit = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (isSubmitting) return;
         setIsSubmitting(true);
         setError('');
 
         try {
-            if (!jwt) {
-                throw new Error("Authentication session missing. Please refresh the page.");
-            }
+            if (!jwt) throw new Error("Authentication session missing. Please refresh the page.");
 
             if (onboardingStep === 1) {
                 setWalletStatus('Saving your secure profile...');
-                const res = await fetch('/api/user/profile', {
+                const resProfile = await fetch('/api/user/profile', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined })
                 });
 
-                if (res.ok) {
+                if (resProfile.ok) {
                     setOnboardingStep(2);
+                    // Chrome allows WebAuthn after a short fetch; Safari might block.
+                    // We run it automatically. If it fails, the user will see the Step 2 button to retry.
+                    await executeWalletCreation();
                 } else {
-                    const data = await res.json();
-                    throw new Error(data.message || 'Error occurred during profile creation');
+                    const dataProfile = await resProfile.json();
+                    throw new Error(dataProfile.message || 'Error occurred during profile creation');
                 }
             } else {
-                setWalletStatus('Create your Passkey in the browser popup...');
-                const client = await getSmartAccountClient({
-                    createNew: true,
-                    username: username || "Juvantia_User",
-                    idToken: jwt
-                });
-
-                if (!client) {
-                    throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
-                }
-
-                const address = await client.getAddress();
-                
-                setWalletStatus('Finalizing your account...');
-                const res = await fetch('/api/user/profile', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address })
-                });
-
-                if (res.ok) {
-                    const newProfile = await res.json();
-                    setProfile(newProfile);
-                    setNeedsOnboarding(false);
-                } else {
-                    const data = await res.json();
-                    throw new Error(data.message || "Error saving wallet address");
-                }
+                await executeWalletCreation();
             }
         } catch (err: any) {
-            setError(err.message || 'Network error');
+            // "NotAllowedError" usually means the browser blocked the WebAuthn popup without a direct click.
+            // In that case, we stay on Step 2 and let them click the manual button.
+            if (err.name === 'NotAllowedError' || err.message.includes('NotAllowedError') || err.message.includes('user activation')) {
+                setWalletStatus('');
+            } else {
+                setError(err.message || 'Network error');
+            }
         } finally {
             setIsSubmitting(false);
             setWalletStatus('');
         }
     };
+
+    // Auto-trigger wallet creation if they dropped off at step 2 and returned
+    useEffect(() => {
+        if (onboardingStep === 2 && jwt && !profile?.smart_wallet_address && !isSubmitting) {
+            handleOnboardingSubmit();
+        }
+    }, [onboardingStep, jwt]);
 
     const handleCreateWallet = async () => {
         // Резервный метод на случай, если кошелек не создался при онбординге
