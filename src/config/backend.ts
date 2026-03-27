@@ -70,10 +70,10 @@ export const backendConfig = (): TypeInput => {
                 },
             }),
             Session.init({
-                // SSO cookie domain: only set for production
                 cookieDomain: (!process.env.NEXT_PUBLIC_API_DOMAIN || process.env.NEXT_PUBLIC_API_DOMAIN.includes("localhost"))
                     ? undefined
                     : ".juvantia.org",
+                cookieSameSite: "lax",
                 // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
