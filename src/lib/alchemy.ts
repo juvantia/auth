@@ -9,7 +9,20 @@ export let signer: AlchemyWebSigner | null = null;
 export async function getSmartAccountClient(params: { createNew?: boolean; username?: string; idToken?: string }) {
     if (typeof window === "undefined") return null;
 
-    if (!signer) {
+    // Всегда (пере)инициализируем signer, если пришел idToken (OIDC/BYO Auth)
+    if (params.idToken) {
+        signer = new AlchemyWebSigner({
+          client: {
+            connection: {
+              // В режиме Bring Your Own Auth (OIDC), токен должен идти в заголовок Authorization
+              jwt: params.idToken,
+            },
+            iframeConfig: {
+              iframeContainerId: "turnkey-iframe-container",
+            },
+          },
+        });
+    } else if (!signer) {
         signer = new AlchemyWebSigner({
           client: {
             connection: {
