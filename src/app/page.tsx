@@ -24,6 +24,7 @@ function Dashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [jwt, setJwt] = useState<string>('');
     const [isCreatingWallet, setIsCreatingWallet] = useState(false);
+    const [isAddingDevice, setIsAddingDevice] = useState(false);
     const [walletStatus, setWalletStatus] = useState(''); 
 
     // Form states
@@ -138,6 +139,60 @@ function Dashboard() {
             setWalletStatus('');
         }
     };
+
+    const handleAddNewDevice = async () => {
+        if (!profile?.username || isAddingDevice) return;
+        
+        setIsAddingDevice(true);
+        setError('');
+        
+        try {
+            console.log("Juvantia: Starting new device registration...");
+            // Режим createNew: true форсирует создание нового Passkey (WebAuthn Register)
+            const kernelResult = await getKernelClient({
+                username: profile.username,
+                createNew: true
+            });
+
+            if (!kernelResult) {
+                throw new Error("Could not initialize a new device. Please check your browser's Passkey support.");
+            }
+
+            const { pubKey } = kernelResult;
+            console.log("New device registered with public key:", pubKey);
+
+            // Сохраняем новый ключ в базу (бэкенд использует $addToSet)
+            const res = await fetch('/api/user/profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ 
+                    name: profile.name,
+                    username: profile.username, 
+                    passkey: pubKey 
+                })
+            });
+
+            if (res.ok) {
+                const updatedProfile = await res.json();
+                setProfile(updatedProfile);
+                alert("✅ New device successfully linked!");
+            } else {
+                const data = await res.json();
+                throw new Error(data.message || 'Error occurred while saving the new device');
+            }
+        } catch (err: any) {
+            console.error("New Device Error:", err);
+            if (err.name === 'NotAllowedError' || err.message.includes('NotAllowedError')) {
+                // Пользователь отменил регистрацию
+                return;
+            }
+            alert("Linking failed: " + (err.message || 'Unknown error'));
+        } finally {
+            setIsAddingDevice(false);
+        }
+    };
+
 
 
 
@@ -378,9 +433,17 @@ function Dashboard() {
                                                 <p className="text-xs text-zinc-600 italic">No specific keys recorded yet.</p>
                                             )}
                                             
-                                            <button className="w-full mt-2 py-2 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-[#00FF88] hover:border-[#00FF88] transition-all flex items-center justify-center gap-2 group">
-                                                <span className="text-lg group-hover:scale-110 transition-transform">+</span>
-                                                Add New Device
+                                            <button 
+                                                onClick={handleAddNewDevice}
+                                                disabled={isAddingDevice}
+                                                className="w-full mt-2 py-3 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-[#00FF88] hover:border-[#00FF88] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isAddingDevice ? (
+                                                    <div className="w-3 h-3 border border-[#00FF88] border-t-transparent rounded-full animate-spin"></div>
+                                                ) : (
+                                                    <span className="text-lg group-hover:scale-110 transition-transform">+</span>
+                                                )}
+                                                {isAddingDevice ? 'Registering Device...' : 'Add New Device'}
                                             </button>
                                         </div>
                                     </div>
