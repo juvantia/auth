@@ -26,7 +26,7 @@ export async function getSmartAccountClient(params: { createNew?: boolean; usern
         await signer.authenticate({
             type: "jwt",
             jwt: params.idToken!
-        });
+        } as any);
 
         // 2. Создаем или получаем Modular Smart Account (ERC-4337)
         const client = await createModularAccountAlchemyClient({
