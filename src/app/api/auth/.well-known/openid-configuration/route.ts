@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-    const issuer = process.env.NEXT_PUBLIC_API_DOMAIN ? `${process.env.NEXT_PUBLIC_API_DOMAIN}/api/auth` : 'http://localhost:3001/api/auth';
+    const baseIssuer = process.env.NEXT_PUBLIC_API_DOMAIN ? `${process.env.NEXT_PUBLIC_API_DOMAIN}/api/auth` : 'http://localhost:3001/api/auth';
+    const issuer = `${baseIssuer}/`;
     
     return NextResponse.json({
         issuer: issuer,
-        jwks_uri: `${issuer}/jwt/jwks.json`,
+        jwks_uri: `${baseIssuer}/jwt/jwks.json`,
         response_types_supported: ["code", "token", "id_token"],
         subject_types_supported: ["public"],
         id_token_signing_alg_values_supported: ["RS256"],

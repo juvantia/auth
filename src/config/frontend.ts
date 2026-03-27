@@ -8,7 +8,7 @@ export const frontendConfig = (): SuperTokensConfig => {
             appName: "Juvantia Auth",
             apiDomain: process.env.NEXT_PUBLIC_API_DOMAIN || "http://localhost:3001",
             websiteDomain: process.env.NEXT_PUBLIC_WEBSITE_DOMAIN || "http://localhost:3001",
-            apiBasePath: "/api/auth",
+            apiBasePath: "/api/auth/",
             websiteBasePath: "/auth",
         },
         recipeList: [
