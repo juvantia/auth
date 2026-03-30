@@ -93,13 +93,16 @@ export const backendConfig = (): TypeInput => {
                                         email = user.emails[0];
                                     }
 
+                                    // TODO: Fix path for standalone build
                                     // Fetch additional info from our MongoDB User model
+                                    /*
                                     const User = (await import("../models/User")).default;
                                     const dbUser = await User.findOne({ supertokens_id: input.userId });
                                     if (dbUser) {
                                         name = dbUser.name;
                                         avatar_url = dbUser.avatar_url;
                                     }
+                                    */
                                 } catch (err) {
                                     console.error("Juvantia Auth: Error fetching user in createNewSession", err);
                                 }
