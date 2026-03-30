@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { withSession } from "supertokens-node/nextjs";
-import dbConnect from "@/lib/mongodb";
+import dbConnect from "@/lib/db";
 import User from "@/models/User";
 
 export async function POST(request: NextRequest) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
             const updatedUser = await User.findOneAndUpdate(
                 { supertokens_id: session.getUserId() },
-                { $set: { smart_wallet_address } },
+                { smart_wallet_address },
                 { new: true }
             );
 

@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import supertokens from "supertokens-node";
 import { backendConfig } from "@/config/backend";
-import dbConnect from "@/lib/mongodb";
-import User from "@/models/User";
+import dbConnect from "@/lib/db";
+import { User, IUser } from "@/models/User";
 import { withSession } from "supertokens-node/nextjs";
 
 try {
@@ -42,8 +42,7 @@ export async function GET(request: NextRequest) {
 
                 // Самолечение: если в базе нет почты, записываем её
                 if (user && email && !user.email) {
-                    user.email = email;
-                    await user.save();
+                    await User.findOneAndUpdate({ supertokens_id: session.getUserId() }, { email });
                 }
 
                 // 3. Если пользователя нет, или нет обязательных полей (включая кошелек) - на онбординг
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest) {
                 }
 
                 return NextResponse.json({
-                    ...user.toObject(),
+                    ...user,
                     email: user.email || email
                 }, { status: 200 });
             } catch (error: any) {
@@ -108,26 +107,27 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
             }
 
-            // Умный апдейт: ищем либо по id, либо по почте
-            const setObj: any = { 
-                supertokens_id: session.getUserId(), 
-                email, 
+            // Умный апдейт: ищем по id
+            const updateObj: Partial<IUser> = { 
+                email: email || '', 
                 name, 
                 username, 
             };
-            if (smart_wallet_address) setObj.smart_wallet_address = smart_wallet_address;
-            if (avatar_url) setObj.avatar_url = avatar_url;
+            if (smart_wallet_address) updateObj.smart_wallet_address = smart_wallet_address;
+            if (avatar_url) updateObj.avatar_url = avatar_url;
 
-            const updateOptions: any = { $set: setObj };
-            
-            // Если передан новый ключ устройства - добавляем в список
+            // Handle passkeys: get existing and add new
+            const user = await User.findOne({ supertokens_id: session.getUserId() });
             if (passkey) {
-                updateOptions.$addToSet = { passkeys: passkey };
+                const existingPasskeys = user?.passkeys || [];
+                if (!existingPasskeys.includes(passkey)) {
+                    updateObj.passkeys = [...existingPasskeys, passkey];
+                }
             }
 
             const savedUser = await User.findOneAndUpdate(
-                { $or: [{ supertokens_id: session.getUserId() }, { email }] },
-                updateOptions,
+                { supertokens_id: session.getUserId() },
+                updateObj,
                 { upsert: true, new: true }
             );
 
