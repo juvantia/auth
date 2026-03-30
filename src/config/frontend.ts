@@ -19,6 +19,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                 // Force cookie-based token storage so the server-side withSession
                 // can read the sAccessToken httpOnly cookie for session verification.
                 tokenTransferMethod: "cookie",
+                sessionTokenFrontendDomain: ".juvantia.org",
             }),
     ],
     async getRedirectionURL(context) {
