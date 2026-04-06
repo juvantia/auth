@@ -76,6 +76,7 @@ export const backendConfig = (): TypeInput => {
                 cookieSameSite: "lax",
                 // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
+                antiCsrf: "NONE",
                 // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
                 override: {

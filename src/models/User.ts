@@ -61,14 +61,15 @@ export const User = {
     // UPDATE
     const name = update.name !== undefined ? update.name : existing.name;
     const email = update.email !== undefined ? update.email : existing.email;
+    const username = update.username !== undefined ? update.username : existing.username;
     const avatar_url = update.avatar_url !== undefined ? update.avatar_url : existing.avatar_url;
     const smart_wallet_address = update.smart_wallet_address !== undefined ? update.smart_wallet_address : existing.smart_wallet_address;
     const passkeys = update.passkeys !== undefined ? JSON.stringify(update.passkeys) : JSON.stringify(existing.passkeys);
 
     const res = await query(
-      `UPDATE users SET name = $1, email = $2, avatar_url = $3, smart_wallet_address = $4, passkeys = $5, updated_at = NOW()
-       WHERE supertokens_id = $6 RETURNING *`,
-      [name, email, avatar_url, smart_wallet_address, passkeys, filter.supertokens_id]
+      `UPDATE users SET name = $1, email = $2, username = $3, avatar_url = $4, smart_wallet_address = $5, passkeys = $6, updated_at = NOW()
+       WHERE supertokens_id = $7 RETURNING *`,
+      [name, email, username, avatar_url, smart_wallet_address, passkeys, filter.supertokens_id]
     );
     return res.rows[0];
   }

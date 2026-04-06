@@ -34,19 +34,27 @@ export async function GET(request: NextRequest) {
 
             try {
                 await dbConnect();
-                const user = await User.findOne({ supertokens_id: session.getUserId() });
+                
+                const supertokens_id = session.getUserId();
+                console.log(`[GET] Looking for user ${supertokens_id}...`);
+                
+                const user = await User.findOne({ supertokens_id });
+                console.log(`[GET] Found user: ${user ? JSON.stringify(user).substring(0, 50) + "..." : "NULL"}`);
 
                 // Получаем email из SuperTokens
-                const userInfo = await supertokens.getUser(session.getUserId());
+                const userInfo = await supertokens.getUser(supertokens_id);
+                console.log(`[GET] SuperTokens userInfo: ${userInfo ? "FOUND" : "NOT FOUND"}`);
                 const email = userInfo?.emails[0];
 
                 // Самолечение: если в базе нет почты, записываем её
                 if (user && email && !user.email) {
-                    await User.findOneAndUpdate({ supertokens_id: session.getUserId() }, { email });
+                    console.log(`[GET] Self-healing email for user ${supertokens_id}`);
+                    await User.findOneAndUpdate({ supertokens_id }, { email });
                 }
 
                 // 3. Если пользователя нет, или нет обязательных полей (включая кошелек) - на онбординг
                 if (!user || !user.name || !user.username || !user.smart_wallet_address) {
+                    console.log(`[GET] Onboarding needed for ${supertokens_id}. UserExists=${!!user}, Name=${user?.name}, Username=${user?.username}, Wallet=${user?.smart_wallet_address}`);
                     return NextResponse.json({ 
                         needsOnboarding: true, 
                         email,
@@ -59,9 +67,16 @@ export async function GET(request: NextRequest) {
                     }, { status: 200 });
                 }
 
+                console.log(`[GET] Returning profile for ${supertokens_id}`);
+                // Возвращаем чистый объект без лишних полей pg
                 return NextResponse.json({
-                    ...user,
-                    email: user.email || email
+                    supertokens_id: user.supertokens_id,
+                    name: user.name,
+                    username: user.username,
+                    email: user.email || email,
+                    avatar_url: user.avatar_url,
+                    smart_wallet_address: user.smart_wallet_address,
+                    passkeys: user.passkeys || []
                 }, { status: 200 });
             } catch (error: any) {
                 console.error("Profile GET error:", error);
