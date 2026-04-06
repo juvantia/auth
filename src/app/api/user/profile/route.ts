@@ -32,43 +32,47 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ message: "Unauthorized (no session)" }, { status: 401 });
             }
 
-            try {
-                await dbConnect();
-                
+                try {
                 const supertokens_id = session.getUserId();
-                console.log(`[GET] Looking for user ${supertokens_id}...`);
+                console.log(`[GET] Looking for user ${supertokens_id} in PostgreSQL...`);
                 
-                const user = await User.findOne({ supertokens_id });
-                console.log(`[GET] Found user: ${user ? JSON.stringify(user).substring(0, 50) + "..." : "NULL"}`);
-
-                // Получаем email из SuperTokens
+                // 1. Get profile from PostgreSQL
+                const result = await query("SELECT * FROM users WHERE supertokens_id = $1", [supertokens_id]);
+                let user = result.rows[0];
+                
+                // 2. Get info from SuperTokens
                 const userInfo = await supertokens.getUser(supertokens_id);
-                console.log(`[GET] SuperTokens userInfo: ${userInfo ? "FOUND" : "NOT FOUND"}`);
                 const email = userInfo?.emails[0];
-
-                // Самолечение: если в базе нет почты, записываем её
-                if (user && email && !user.email) {
-                    console.log(`[GET] Self-healing email for user ${supertokens_id}`);
-                    await User.findOneAndUpdate({ supertokens_id }, { email });
+                
+                // 3. Self-healing: If not in PG but in ST, creating basic record
+                if (!user && email) {
+                    console.log(`[GET] User ${supertokens_id} not found in PG. Auto-creating record...`);
+                    const insertResult = await query(
+                        "INSERT INTO users (supertokens_id, email, name) VALUES ($1, $2, $3) RETURNING *",
+                        [supertokens_id, email, email.split('@')[0]]
+                    );
+                    user = insertResult.rows[0];
                 }
 
-                // 3. Если пользователя нет, или нет обязательных полей (включая кошелек) - на онбординг
-                if (!user || !user.name || !user.username || !user.smart_wallet_address) {
-                    console.log(`[GET] Onboarding needed for ${supertokens_id}. UserExists=${!!user}, Name=${user?.name}, Username=${user?.username}, Wallet=${user?.smart_wallet_address}`);
+                if (!user) {
+                    return NextResponse.json({ message: "User profile not found" }, { status: 404 });
+                }
+
+                // 4. Checking onboarding status
+                if (!user.name || !user.username || !user.smart_wallet_address) {
                     return NextResponse.json({ 
                         needsOnboarding: true, 
                         email,
-                        user: user ? {
+                        user: {
                             name: user.name,
                             username: user.username,
                             avatar_url: user.avatar_url,
                             smart_wallet_address: user.smart_wallet_address
-                        } : null
+                        }
                     }, { status: 200 });
                 }
 
                 console.log(`[GET] Returning profile for ${supertokens_id}`);
-                // Возвращаем чистый объект без лишних полей pg
                 return NextResponse.json({
                     supertokens_id: user.supertokens_id,
                     name: user.name,
