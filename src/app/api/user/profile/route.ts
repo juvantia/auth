@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import supertokens from "supertokens-node";
 import { backendConfig } from "@/config/backend";
-import dbConnect from "@/lib/db";
+import { query } from "@/lib/db";
 import { User, IUser } from "@/models/User";
 import { withSession } from "supertokens-node/nextjs";
 
@@ -106,7 +106,6 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            await dbConnect();
             const { name, username, avatar_url, smart_wallet_address, passkey } = await request.json();
 
             if (!name || !username) {

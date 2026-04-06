@@ -70,9 +70,7 @@ export const backendConfig = (): TypeInput => {
                 },
             }),
             Session.init({
-                cookieDomain: (!process.env.NEXT_PUBLIC_API_DOMAIN || process.env.NEXT_PUBLIC_API_DOMAIN.includes("localhost"))
-                    ? undefined
-                    : ".juvantia.org",
+                cookieDomain: ".juvantia.org",
                 cookieSameSite: "lax",
                 // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
