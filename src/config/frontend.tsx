@@ -4,6 +4,7 @@ import { SuperTokensConfig } from "supertokens-auth-react/lib/build/types";
 
 export const frontendConfig = (): SuperTokensConfig => {
     return {
+        useShadowDom: false,
         appInfo: {
             appName: "Juvantia Auth",
             apiDomain: process.env.NEXT_PUBLIC_API_DOMAIN || "https://auth.juvantia.org",
@@ -29,9 +30,13 @@ export const frontendConfig = (): SuperTokensConfig => {
                         --primary: #00FF88;
                         --text-primary: #dfe4e1;
                         --text-secondary: #b9cbb9;
+                        background-color: var(--container-bg) !important;
                         border: 1px solid rgba(0, 255, 136, 0.1);
                         box-shadow: 0 20px 50px rgba(0,0,0,0.5);
                         border-radius: 4px;
+                    }
+                    [data-supertokens~=row] {
+                        background-color: var(--container-bg) !important;
                     }
                     [data-supertokens~=headerTitle] {
                         font-family: var(--font-cinzel), serif !important;
