@@ -1,26 +1,29 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { Cinzel, Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { SuperTokensProvider } from "@/components/auth/SuperTokensProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "900"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-grotesk",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
   title: "Juvantia Auth",
-  description: "Unified Authentication Center for Juvantia Ecosystem",
+  description: "Juvantia Identity & Account Center",
 };
 
 export default function RootLayout({
@@ -29,13 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
-      >
-        <SuperTokensProvider>
-          {children}
-        </SuperTokensProvider>
+    <html
+      lang="en"
+      className={`${cinzel.variable} ${spaceGrotesk.variable} ${inter.variable} antialiased`}
+    >
+      <body>
+        <SuperTokensProvider>{children}</SuperTokensProvider>
       </body>
     </html>
   );

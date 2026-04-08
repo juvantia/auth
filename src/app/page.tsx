@@ -7,461 +7,559 @@ import { signOut } from 'supertokens-auth-react/recipe/passwordless';
 import { getKernelClient } from '@/lib/zerodev';
 
 interface UserProfile {
-    _id: string;
-    supertokens_id: string;
-    name: string;
-    username: string;
-    email?: string;
-    avatar_url?: string;
-    smart_wallet_address?: string;
-    passkeys?: string[];
+  _id: string;
+  supertokens_id: string;
+  name: string;
+  username: string;
+  email?: string;
+  avatar_url?: string;
+  smart_wallet_address?: string;
+  passkeys?: string[];
 }
 
+// ─── Utility: abbreviate passkey public key for display ───────────────────────
+function abbreviateKey(key: string, len = 8): string {
+  if (!key || key.length <= len * 2) return key;
+  return `${key.slice(0, len)}···${key.slice(-len)}`;
+}
+
+// ─── Loading Screen ───────────────────────────────────────────────────────────
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="font-grotesk text-[11px] uppercase tracking-widest text-text-secondary/50 animate-pulse">
+        Authenticating...
+      </p>
+    </div>
+  );
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
 function Dashboard() {
-    const session = useSessionContext();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [needsOnboarding, setNeedsOnboarding] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [jwt, setJwt] = useState<string>('');
-    const [isCreatingWallet, setIsCreatingWallet] = useState(false);
-    const [isAddingDevice, setIsAddingDevice] = useState(false);
-    const [walletStatus, setWalletStatus] = useState(''); 
+  const session = useSessionContext();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [jwt, setJwt] = useState<string>('');
+  const [isCreatingWallet, setIsCreatingWallet] = useState(false);
+  const [isAddingDevice, setIsAddingDevice] = useState(false);
+  const [walletStatus, setWalletStatus] = useState('');
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-    // Form states
-    const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
-    const [avatarUrl, setAvatarUrl] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState('');
+  // Onboarding form states
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-    useEffect(() => {
-        async function fetchProfile() {
-            if (!session.loading && session.doesSessionExist) {
-                try {
-                    // Всегда получаем токен при входе, он пригодится для создания кошелька
-                    const token = await Session.getAccessToken();
-                    if (token) setJwt(token);
-
-                    const res = await fetch('/api/user/profile', {
-                        credentials: 'include'
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.needsOnboarding) {
-                            setNeedsOnboarding(true);
-                            // Предзаполнение полей, если запись в базе уже частично была
-                            if (data.user) {
-                                 setName(data.user.name || '');
-                                setUsername(data.user.username || '');
-                                setAvatarUrl(data.user.avatar_url || '');
-                            }
-                        } else {
-                            setProfile(data);
-                        }
-                    } else {
-                        console.error("Failed to fetch profile");
-                    }
-                } catch (err) {
-                    console.error(err);
-                } finally {
-                    setIsLoading(false);
-                }
-            }
-        }
-        
-        fetchProfile();
-    }, [session]);
-
-    const handleOnboardingSubmit = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (isSubmitting) return;
-        
-        if (!name || !username) {
-            setError("Please fill in all required fields.");
-            return;
-        }
-
-        setIsSubmitting(true);
-        setError('');
-        setWalletStatus('Initializing secure Passkey...');
-
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!session.loading && session.doesSessionExist) {
         try {
-            if (!jwt) throw new Error("Authentication session missing. Please refresh the page.");
+          const token = await Session.getAccessToken();
+          if (token) setJwt(token);
 
-            // 1. Сначала создаем Passkey и получаем смарт-аккаунт
-            console.log("Juvantia: Initializing ZeroDev Kernel client...");
-            const kernelResult = await getKernelClient({
-                username: username,
-                createNew: true
-            });
-
-            if (!kernelResult) {
-                throw new Error("Could not initialize your wallet. Please check if your browser supports Passkeys.");
-            }
-
-            const { client: kernelClient, pubKey } = kernelResult;
-            const address = kernelClient.account.address;
-            console.log("ZeroDev Wallet address created:", address);
-            
-            // 2. Только после успеха Passkey сохраняем всё в базу одним запросом
-            setWalletStatus('Finalizing your account...');
-            const res = await fetch('/api/user/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ 
-                    name, 
-                    username, 
-                    avatar_url: avatarUrl || undefined, 
-                    smart_wallet_address: address,
-                    passkey: pubKey // Сохраняем публичный ключ устройства
-                })
-            });
-
-            if (res.ok) {
-                const newProfile = await res.json();
-                setProfile(newProfile);
-                setNeedsOnboarding(false);
+          const res = await fetch('/api/user/profile', { credentials: 'include' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.needsOnboarding) {
+              setNeedsOnboarding(true);
+              if (data.user) {
+                setName(data.user.name || '');
+                setUsername(data.user.username || '');
+                setAvatarUrl(data.user.avatar_url || '');
+              }
             } else {
-                const data = await res.json();
-                throw new Error(data.message || 'Error occurred during account creation');
+              setProfile(data);
             }
-        } catch (err: any) {
-            console.error("Onboarding Error:", err);
-            // Если пользователь отменил Passkey (NotAllowedError), просто сбрасываем статус
-            if (err.name === 'NotAllowedError' || err.message.includes('NotAllowedError') || err.message.includes('user activation')) {
-                setError("Wallet creation is required. Please try again.");
-            } else {
-                setError(err.message || 'Network error');
-            }
+          }
+        } catch (err) {
+          console.error(err);
         } finally {
-            setIsSubmitting(false);
-            setWalletStatus('');
+          setIsLoading(false);
         }
-    };
-
-    const handleAddNewDevice = async () => {
-        if (!profile?.username || isAddingDevice) return;
-        
-        setIsAddingDevice(true);
-        setError('');
-        
-        try {
-            console.log("Juvantia: Starting new device registration...");
-            // Режим createNew: true форсирует создание нового Passkey (WebAuthn Register)
-            const kernelResult = await getKernelClient({
-                username: profile.username,
-                createNew: true
-            });
-
-            if (!kernelResult) {
-                throw new Error("Could not initialize a new device. Please check your browser's Passkey support.");
-            }
-
-            const { pubKey } = kernelResult;
-            console.log("New device registered with public key:", pubKey);
-
-            // Сохраняем новый ключ в базу (бэкенд использует $addToSet)
-            const res = await fetch('/api/user/profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
-                body: JSON.stringify({ 
-                    name: profile.name,
-                    username: profile.username, 
-                    passkey: pubKey 
-                })
-            });
-
-            if (res.ok) {
-                const updatedProfile = await res.json();
-                setProfile(updatedProfile);
-                alert("✅ New device successfully linked!");
-            } else {
-                const data = await res.json();
-                throw new Error(data.message || 'Error occurred while saving the new device');
-            }
-        } catch (err: any) {
-            console.error("New Device Error:", err);
-            if (err.name === 'NotAllowedError' || err.message.includes('NotAllowedError')) {
-                // Пользователь отменил регистрацию
-                return;
-            }
-            alert("Linking failed: " + (err.message || 'Unknown error'));
-        } finally {
-            setIsAddingDevice(false);
-        }
-    };
-
-
-
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const size = 256;
-                canvas.width = size;
-                canvas.height = size;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) return;
-                const minSide = Math.min(img.width, img.height);
-                const sx = (img.width - minSide) / 2;
-                const sy = (img.height - minSide) / 2;
-                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                setAvatarUrl(dataUrl);
-            };
-            img.src = event.target?.result as string;
-        };
-        reader.readAsDataURL(file);
-    };
-
-    if (session.loading || isLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-black text-white">
-                <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 border-2 border-[#00FF88] border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-zinc-500">Loading your profile...</p>
-                </div>
-            </div>
-        );
+      }
     }
+    fetchProfile();
+  }, [session]);
 
-    return (
-        <div className="min-h-screen bg-black text-white">
-            {needsOnboarding ? (
-                <div className="min-h-screen flex items-center justify-center p-4">
-                    <div className="max-w-md w-full">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-[#00FF88] to-[#00D4FF] bg-clip-text text-transparent mb-1" style={{ fontFamily: 'var(--font-cinzel)' }}>
-                                    Juvantia Auth
-                                </h1>
-                                <p className="text-zinc-400 text-sm">Complete your profile to continue</p>
-                            </div>
-                            <button 
-                                onClick={() => signOut()}
-                                className="text-xs font-semibold text-zinc-500 hover:text-white transition-colors border border-zinc-800 px-3 py-1.5 rounded-lg hover:bg-zinc-800"
-                            >
-                                Sign Out
-                            </button>
-                        </div>
+  // ─── Onboarding Submit ──────────────────────────────────────────────────────
+  const handleOnboardingSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (isSubmitting) return;
+    if (!name || !username) { setError('Please fill in all required fields.'); return; }
 
-                        <div className="p-8 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl shadow-[#00FF88]/5">
-                            <div className="flex flex-col items-center justify-center mb-6">
-                                <div className="relative w-24 h-24 mb-3">
-                                    <div className="w-full h-full rounded-full bg-gradient-to-tr from-[#00FF88] to-[#00D4FF] flex items-center justify-center text-3xl font-bold text-black border-4 border-zinc-800 overflow-hidden">
-                                        {avatarUrl ? (
-                                            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" onError={() => setAvatarUrl('')} />
-                                        ) : (
-                                            <span>{name ? name.charAt(0).toUpperCase() : '?'}</span>
-                                        )}
-                                    </div>
-                                    <label className="absolute bottom-0 right-0 w-8 h-8 bg-zinc-800 border border-zinc-700 rounded-full flex items-center justify-center cursor-pointer hover:bg-zinc-700 transition-colors shadow-lg group">
-                                        <span className="text-sm">📷</span>
-                                        <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                                    </label>
-                                </div>
-                                <p className="text-xs text-zinc-500">Click camera icon to upload</p>
-                            </div>
+    setIsSubmitting(true);
+    setError('');
+    setWalletStatus('Initializing secure account...');
 
-                            <form onSubmit={handleOnboardingSubmit} className="space-y-4">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Full Name <span className="text-red-500">*</span></label>
-                                            <input
-                                                type="text" required maxLength={32} value={name}
-                                                onChange={(e) => setName(e.target.value)}
-                                                className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
-                                                placeholder="John Doe"
-                                            />
-                                        </div>
+    try {
+      if (!jwt) throw new Error('Authentication session missing. Please refresh the page.');
 
-                                        <div>
-                                            <label className="block text-sm font-medium text-zinc-400 mb-1.5">Username <span className="text-red-500">*</span></label>
-                                            <div className="relative">
-                                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
-                                                <input
-                                                    type="text" required maxLength={16} value={username}
-                                                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
-                                                    className="w-full bg-black border border-zinc-800 rounded-xl pl-8 pr-4 py-3 text-white focus:outline-none focus:border-[#00FF88] transition-colors"
-                                                    placeholder="johndoe"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+      setWalletStatus('Creating your security key...');
+      const kernelResult = await getKernelClient({ username, createNew: true });
+      if (!kernelResult) throw new Error("Could not initialize your account. Please check if your browser supports Passkeys.");
 
-                                    <div className="bg-black/50 border border-[#00FF88]/20 p-6 rounded-xl text-center shadow-inner shadow-[#00FF88]/5 mt-6">
-                                        <div className="w-12 h-12 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center mx-auto mb-3 border border-[#00FF88]/30">
-                                            <span className="text-xl">🔐</span>
-                                        </div>
-                                        <h3 className="text-md font-bold text-white mb-1">Passkey Secure Wallet</h3>
-                                        <p className="text-zinc-500 text-[10px] mb-2 leading-tight">
-                                            A mandatory secure wallet will be created using your device's biometric authentication. No seed phrases required.
-                                        </p>
-                                        <div className="text-[10px] text-[#00FF88] font-medium bg-[#00FF88]/10 py-1.5 border border-[#00FF88]/20 rounded-lg">
-                                            Gas fees are 100% sponsored by Juvantia.
-                                        </div>
-                                    </div>
+      const { client: kernelClient, pubKey } = kernelResult;
+      const address = kernelClient.account.address;
 
-                                {error && (
-                                    <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm">
-                                        {error}
-                                    </div>
-                                )}
+      setWalletStatus('Finalizing your account...');
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined, smart_wallet_address: address, passkey: pubKey }),
+      });
 
-                                {walletStatus && (
-                                    <div className="flex items-center gap-2 text-[#00FF88] text-xs font-medium animate-pulse px-1">
-                                        <div className="w-2 h-2 rounded-full bg-[#00FF88]"></div>
-                                        {walletStatus}
-                                    </div>
-                                )}
+      if (res.ok) {
+        const newProfile = await res.json();
+        setProfile(newProfile);
+        setNeedsOnboarding(false);
+      } else {
+        const data = await res.json();
+        throw new Error(data.message || 'Error occurred during account creation');
+      }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.message?.includes('NotAllowedError') || err.message?.includes('user activation')) {
+        setError('Account setup requires a Passkey. Please try again.');
+      } else {
+        setError(err.message || 'Network error');
+      }
+    } finally {
+      setIsSubmitting(false);
+      setWalletStatus('');
+    }
+  };
 
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="w-full bg-gradient-to-r from-[#00FF88] to-[#00D4FF] text-black font-bold text-lg py-3.5 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(0,255,136,0.3)]"
-                                >
-                                    {isSubmitting 
-                                        ? walletStatus || 'Processing...' 
-                                        : 'Complete Setup 🚀'}
-                                </button>
-                                
-                                <p className="text-[10px] text-zinc-600 text-center uppercase tracking-widest mt-4">
-                                    Secure Account & Wallet Initialization
-                                </p>
-                            </form>
-                    </div>
+  // ─── Add New Device ─────────────────────────────────────────────────────────
+  const handleAddNewDevice = async () => {
+    if (!profile?.username || isAddingDevice) return;
+    setIsAddingDevice(true);
+    setError('');
+
+    try {
+      const kernelResult = await getKernelClient({ username: profile.username, createNew: true });
+      if (!kernelResult) throw new Error("Could not register new device. Check Passkey support in your browser.");
+
+      const { pubKey } = kernelResult;
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: profile.name, username: profile.username, passkey: pubKey }),
+      });
+
+      if (res.ok) {
+        const updatedProfile = await res.json();
+        setProfile(updatedProfile);
+      } else {
+        const data = await res.json();
+        throw new Error(data.message || 'Error while saving the new device');
+      }
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError' || err.message?.includes('NotAllowedError')) return;
+      setError('Device registration failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setIsAddingDevice(false);
+    }
+  };
+
+  // ─── Image Upload ───────────────────────────────────────────────────────────
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 256;
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        const minSide = Math.min(img.width, img.height);
+        const sx = (img.width - minSide) / 2;
+        const sy = (img.height - minSide) / 2;
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+        setAvatarUrl(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ─── Copy passkey ───────────────────────────────────────────────────────────
+  const handleCopyKey = (key: string, idx: number) => {
+    navigator.clipboard.writeText(key);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
+  if (session.loading || isLoading) return <LoadingScreen />;
+
+  return (
+    <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
+      {/* ── Mobile Shell ── */}
+      <div className="w-full max-w-sm flex flex-col gap-5">
+
+        {/* ── Header ─────────────────────────────────────────────────────────── */}
+        <header className="flex items-center justify-between mb-2">
+          <div className="flex flex-col gap-0.5">
+            <h1
+              className="text-xl font-normal uppercase tracking-[0.3em] bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+              style={{ fontFamily: 'var(--font-cinzel)' }}
+            >
+              Juvantia
+            </h1>
+            <p className="font-grotesk text-[9px] uppercase tracking-[0.25em] text-text-secondary/40">
+              Identity Center
+            </p>
+          </div>
+
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-1.5 font-grotesk text-[10px] uppercase tracking-widest text-error/60 hover:text-error border border-error/20 hover:border-error/50 px-3 py-1.5 transition-all duration-300 rounded-sm hover:shadow-[0_0_12px_rgba(255,71,87,0.2)]"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Sign Out
+          </button>
+        </header>
+
+        {needsOnboarding ? (
+          /* ══════════════════════════════════════════════════════════════════════
+             ONBOARDING FLOW
+          ══════════════════════════════════════════════════════════════════════ */
+          <div className="flex flex-col gap-5">
+            {/* Avatar */}
+            <div className="neon-card flex flex-col items-center gap-3 py-8">
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden">
+                  {avatarUrl
+                    ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" onError={() => setAvatarUrl('')} />
+                    : <span style={{ fontFamily: 'var(--font-cinzel)' }}>{name ? name.charAt(0).toUpperCase() : '?'}</span>
+                  }
                 </div>
+                <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-surface-high border border-border/30 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 transition-all group shadow-lg">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary group-hover:text-primary transition-colors">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              </div>
+              <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40">
+                Tap to upload avatar
+              </p>
             </div>
-        ) : (
-                <div className="p-8">
-                    <div className="max-w-4xl mx-auto">
-                        <header className="flex justify-between items-center mb-12">
-                            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#00FF88] to-[#00D4FF] bg-clip-text text-transparent" style={{ fontFamily: 'var(--font-cinzel)' }}>
-                                Juvantia Auth
-                            </h1>
-                            <button 
-                                onClick={() => signOut()}
-                                className="px-4 py-2 bg-zinc-900 shadow-lg shadow-[#00FF88]/5 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-all"
-                            >
-                                Sign Out
-                            </button>
-                        </header>
 
-                        <main className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm shadow-xl shadow-[#00FF88]/5">
-                                <div className="flex items-center space-x-4 mb-6">
-                                    <div className="w-16 h-16 bg-gradient-to-tr from-[#00FF88] to-[#00D4FF] rounded-full flex items-center justify-center text-xl font-bold text-black overflow-hidden border-2 border-zinc-800">
-                                        {profile?.avatar_url ? (
-                                            <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            profile?.name?.charAt(0).toUpperCase()
-                                        )}
-                                    </div>
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-white">{profile?.name}</h2>
-                                        <p className="text-zinc-500">@{profile?.username}</p>
-                                    </div>
-                                </div>
+            {/* Form */}
+            <form onSubmit={handleOnboardingSubmit} className="neon-card flex flex-col gap-4">
+              <div>
+                <label className="neon-label">Full Name <span className="text-error">*</span></label>
+                <input
+                  type="text" required maxLength={32} value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="neon-input"
+                  placeholder="YOUR NAME"
+                />
+              </div>
 
-                                <div className="space-y-4 pt-4 border-t border-zinc-800">
-                                    <div>
-                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Email Address</p>
-                                        <p className="text-sm font-medium text-zinc-300 bg-black/50 p-3 rounded-lg border border-zinc-800">{profile?.email}</p>
-                                    </div>
-                                    
-                                    {jwt && (
-                                        <div>
-                                            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Cloud Session Token</p>
-                                            <div className="flex items-center space-x-2">
-                                                <input
-                                                    type="text" readOnly value={jwt}
-                                                    className="text-sm font-mono text-zinc-500 bg-black/50 p-3 rounded-lg border border-zinc-800 flex-1 outline-none truncate"
-                                                />
-                                                <button 
-                                                    onClick={() => { navigator.clipboard.writeText(jwt); alert("Copied!"); }}
-                                                    className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors text-xs"
-                                                >
-                                                    Copy
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-2xl backdrop-blur-sm shadow-xl shadow-[#00D4FF]/5">
-                                <div className="flex items-center space-x-3 mb-6">
-                                    <div className="w-10 h-10 bg-[#00FF88]/10 text-[#00FF88] rounded-full flex items-center justify-center border border-[#00FF88]/20">
-                                        <span className="text-lg">🛡️</span>
-                                    </div>
-                                    <h2 className="text-xl font-bold text-white">Smart Account</h2>
-                                </div>
-                                
-                                <div className="space-y-6">
-                                    <div>
-                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Wallet Address</p>
-                                        <div className="w-full text-left bg-black/50 p-4 rounded-xl border border-zinc-800 break-all text-[10px] text-[#00FF88] font-mono shadow-inner">
-                                            {profile?.smart_wallet_address || 'Not initialized'}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Linked Devices (Passkeys)</p>
-                                        <div className="space-y-2">
-                                            {profile?.passkeys && profile.passkeys.length > 0 ? (
-                                                profile.passkeys.map((pk, idx) => (
-                                                    <div key={idx} className="flex items-center justify-between bg-black/30 border border-zinc-800 p-3 rounded-lg">
-                                                        <div className="flex items-center space-x-3">
-                                                            <span className="text-lg">📱</span>
-                                                            <div>
-                                                                <p className="text-[10px] text-white font-medium">Device #{idx + 1}</p>
-                                                                <p className="text-[9px] text-zinc-500 font-mono truncate w-48">{pk}</p>
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[8px] bg-[#00FF88]/10 text-[#00FF88] px-2 py-0.5 rounded border border-[#00FF88]/20">Active</span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <p className="text-xs text-zinc-600 italic">No specific keys recorded yet.</p>
-                                            )}
-                                            
-                                            <button 
-                                                onClick={handleAddNewDevice}
-                                                disabled={isAddingDevice}
-                                                className="w-full mt-2 py-3 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-[#00FF88] hover:border-[#00FF88] transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                {isAddingDevice ? (
-                                                    <div className="w-3 h-3 border border-[#00FF88] border-t-transparent rounded-full animate-spin"></div>
-                                                ) : (
-                                                    <span className="text-lg group-hover:scale-110 transition-transform">+</span>
-                                                )}
-                                                {isAddingDevice ? 'Registering Device...' : 'Add New Device'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </main>
-                    </div>
+              <div>
+                <label className="neon-label">Username <span className="text-error">*</span></label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-secondary/60 font-grotesk font-bold text-sm">@</span>
+                  <input
+                    type="text" required maxLength={16} value={username}
+                    onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
+                    className="neon-input pl-9"
+                    placeholder="USERNAME"
+                  />
                 </div>
-            )}
-            <div id="turnkey-iframe-container" style={{ display: 'none' }}></div>
-        </div>
-    );
+              </div>
+
+              {/* Passkey info block */}
+              <div className="mt-2 border border-primary/15 bg-primary/5 rounded-sm p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-sm bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    {/* Fingerprint icon */}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 12C2 6.5 6.5 2 12 2a10 10 0 0 1 8 4" />
+                      <path d="M5 19.5C5.5 18 6 15 6 12c0-1.7.7-3.5 2-4.7" />
+                      <path d="M17.8 21.8c-.5-2.6-1-5-2.8-7" />
+                      <path d="M10.9 4a10 10 0 0 1 8.1 5" />
+                      <path d="M12 12a3 3 0 0 0-3 3c0 2 0 3.5-.5 5" />
+                      <path d="M14 20c.5-1.5.5-3.5.5-5 0-.9-.1-1.8-.4-2.5" />
+                      <path d="M12 9a3 3 0 0 1 3 3" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-primary">Passkey Security</h3>
+                    <p className="font-grotesk text-[9px] uppercase tracking-wider text-primary/60 mt-0.5">Biometric · Hardware Key · Device Auth</p>
+                  </div>
+                </div>
+                <p className="font-inter text-[11px] text-text-secondary/60 leading-relaxed">
+                  Your account is protected by a Passkey — your device's biometric authentication. No passwords, no seed phrases.
+                </p>
+                <div className="font-grotesk text-[9px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 py-1.5 px-3 text-center">
+                  All fees sponsored by Juvantia
+                </div>
+              </div>
+
+              {error && (
+                <div className="border border-error/30 bg-error/5 px-4 py-3 rounded-sm font-inter text-[12px] text-error">
+                  {error}
+                </div>
+              )}
+
+              {walletStatus && (
+                <div className="flex items-center gap-2 text-primary font-grotesk text-[10px] uppercase tracking-widest animate-pulse">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  {walletStatus}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="neon-btn-primary w-full py-4 rounded-sm text-[12px] mt-2"
+              >
+                {isSubmitting ? walletStatus || 'Processing...' : 'Complete Setup'}
+              </button>
+
+              <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/30 text-center">
+                Secure Account Initialization
+              </p>
+            </form>
+          </div>
+        ) : (
+          /* ══════════════════════════════════════════════════════════════════════
+             PROFILE DASHBOARD
+          ══════════════════════════════════════════════════════════════════════ */
+          <div className="flex flex-col gap-5">
+
+            {/* ── Profile Card ─────────────────────────────────────────────── */}
+            <div className="neon-card flex flex-col items-center gap-4 py-8 relative overflow-visible">
+              {/* Top ghost label */}
+              <p className="absolute top-4 left-4 font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/25">
+                Profile
+              </p>
+
+              {/* Avatar */}
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
+                {profile?.avatar_url
+                  ? <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  : <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile?.name?.charAt(0).toUpperCase()}</span>
+                }
+              </div>
+
+              {/* Name */}
+              <div className="flex flex-col items-center gap-1">
+                <h2
+                  className="text-xl font-semibold uppercase tracking-widest text-[#E6F0EB]"
+                  style={{ fontFamily: 'var(--font-cinzel)' }}
+                >
+                  {profile?.name}
+                </h2>
+                <p className="font-grotesk text-[13px] font-medium tracking-wider text-secondary">
+                  @{profile?.username}
+                </p>
+              </div>
+            </div>
+
+            {/* ── Sign-In Method ────────────────────────────────────────────── */}
+            <div className="neon-card flex flex-col gap-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-1 h-4 bg-secondary/60 rounded-full" />
+                <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
+                  Sign-In Method
+                </h3>
+              </div>
+
+              <div className="flex items-center justify-between bg-surface-container border border-border/10 px-4 py-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-sm bg-secondary/10 border border-secondary/20 flex items-center justify-center flex-shrink-0">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00D4FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                      <polyline points="22,6 12,13 2,6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40 mb-0.5">Email</p>
+                    <p className="font-inter text-[13px] text-text-primary">{profile?.email}</p>
+                  </div>
+                </div>
+                <span className="font-grotesk text-[8px] uppercase tracking-widest text-secondary border border-secondary/20 bg-secondary/5 px-2 py-0.5">
+                  Active
+                </span>
+              </div>
+            </div>
+
+            {/* ── Secure Account (Wallet) ────────────────────────────────────── */}
+            <div className="neon-card flex flex-col gap-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-1 h-4 bg-primary/60 rounded-full" />
+                <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
+                  Secure Account
+                </h3>
+              </div>
+
+              {/* Status row */}
+              <div className="flex items-center justify-between bg-surface-container border border-border/10 px-4 py-3 rounded-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-sm bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                    {/* Shield icon */}
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40 mb-0.5">Built-in Wallet</p>
+                    <p className="font-inter text-[13px] text-text-primary">Protected by your Passkeys</p>
+                  </div>
+                </div>
+                <span className="font-grotesk text-[8px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2 py-0.5">
+                  {profile?.smart_wallet_address ? 'Ready' : 'Pending'}
+                </span>
+              </div>
+
+              {/* Info block */}
+              <div className="flex flex-col gap-1 font-inter text-[12px] text-text-secondary/50 leading-relaxed px-1">
+                <p>
+                  Your built-in wallet is secured exclusively by your Passkeys. To view your balance or manage stablecoins, visit{' '}
+                  <span className="text-secondary font-grotesk font-bold tracking-wider">City</span>.
+                </p>
+              </div>
+            </div>
+
+            {/* ── Passkeys / Linked Devices ─────────────────────────────────── */}
+            <div className="neon-card flex flex-col gap-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-1 h-4 bg-primary/60 rounded-full" />
+                <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
+                  Linked Devices
+                </h3>
+              </div>
+
+              <p className="font-inter text-[12px] text-text-secondary/50 leading-relaxed px-1">
+                Your account is accessible from the devices below. Each device holds a unique security key — your Passkey. Adding a device means it can sign in and authorize transactions.
+              </p>
+
+              {/* Device list */}
+              <div className="flex flex-col gap-2">
+                {profile?.passkeys && profile.passkeys.length > 0 ? (
+                  profile.passkeys.map((pk, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between bg-surface-container border border-border/10 px-4 py-3 rounded-sm group hover:border-primary/20 transition-all duration-300"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-sm bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0">
+                          {/* Device / phone icon */}
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                            <line x1="12" y1="18" x2="12.01" y2="18" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-grotesk text-[10px] uppercase tracking-wider text-text-primary font-medium">
+                            Device #{idx + 1}
+                          </p>
+                          <p className="font-mono text-[9px] text-text-secondary/40 mt-0.5">
+                            {abbreviateKey(pk)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleCopyKey(pk, idx)}
+                          className="text-text-secondary/30 hover:text-primary transition-colors duration-200"
+                          title="Copy public key"
+                        >
+                          {copiedIdx === idx ? (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          ) : (
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className="font-grotesk text-[8px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2 py-0.5">
+                          Active
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="font-inter text-[12px] text-text-secondary/30 italic px-1">
+                    No devices recorded.
+                  </p>
+                )}
+              </div>
+
+              {/* Error message */}
+              {error && (
+                <div className="border border-error/30 bg-error/5 px-4 py-3 rounded-sm font-inter text-[12px] text-error">
+                  {error}
+                </div>
+              )}
+
+              {/* Add Device Button */}
+              <button
+                onClick={handleAddNewDevice}
+                disabled={isAddingDevice}
+                className="w-full mt-1 py-3.5 border border-dashed border-border/25 rounded-sm font-grotesk text-[10px] uppercase tracking-widest text-text-secondary/40 hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 flex items-center justify-center gap-2 group disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                {isAddingDevice ? (
+                  <>
+                    <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+                    Registering Device...
+                  </>
+                ) : (
+                  <>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Link New Device
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* ── Footer ───────────────────────────────────────────────────── */}
+            <div className="flex items-center justify-center py-4">
+              <p className="font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/20">
+                Juvantia Auth · Identity &amp; Security Center
+              </p>
+            </div>
+
+          </div>
+        )}
+      </div>
+
+      {/* Hidden SuperTokens iframe container */}
+      <div id="turnkey-iframe-container" style={{ display: 'none' }} />
+    </div>
+  );
 }
 
+// ─── Export ───────────────────────────────────────────────────────────────────
 export default function Home() {
-    return (
-        <SessionAuth>
-            <Dashboard />
-        </SessionAuth>
-    );
+  return (
+    <SessionAuth>
+      <Dashboard />
+    </SessionAuth>
+  );
 }
