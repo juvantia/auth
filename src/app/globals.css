@@ -44,8 +44,10 @@
     z-index: -1;
     pointer-events: none;
     background-image:
+      /* Major Grid (100px) */
       linear-gradient(rgba(0, 255, 136, 0.06) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 255, 136, 0.06) 1px, transparent 1px),
+      /* Minor Grid (20px) */
       linear-gradient(rgba(0, 255, 136, 0.02) 1px, transparent 1px),
       linear-gradient(90deg, rgba(0, 255, 136, 0.02) 1px, transparent 1px);
     background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;

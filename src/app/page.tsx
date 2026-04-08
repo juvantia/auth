@@ -184,11 +184,40 @@ function Dashboard() {
         const sx = (img.width - minSide) / 2;
         const sy = (img.height - minSide) / 2;
         ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-        setAvatarUrl(canvas.toDataURL('image/jpeg', 0.8));
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        
+        if (needsOnboarding) {
+          setAvatarUrl(dataUrl);
+        } else {
+          // Update existing profile
+          handleUpdateAvatar(dataUrl);
+        }
       };
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleUpdateAvatar = async (newUrl: string) => {
+    if (!profile) return;
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          name: profile.name, 
+          username: profile.username, 
+          avatar_url: newUrl 
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProfile(updated);
+      }
+    } catch (err) {
+      console.error("Avatar update failed", err);
+    }
   };
 
   // ─── Copy passkey ───────────────────────────────────────────────────────────
@@ -213,11 +242,8 @@ function Dashboard() {
               className="text-xl font-normal uppercase tracking-[0.3em] bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
               style={{ fontFamily: 'var(--font-cinzel)' }}
             >
-              Juvantia
+              Juvantia Auth
             </h1>
-            <p className="font-grotesk text-[9px] uppercase tracking-[0.25em] text-text-secondary/40">
-              Identity Center
-            </p>
           </div>
 
           <button
@@ -353,11 +379,20 @@ function Dashboard() {
               </p>
 
               {/* Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
-                {profile?.avatar_url
-                  ? <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                  : <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile?.name?.charAt(0).toUpperCase()}</span>
-                }
+              <div className="relative">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
+                  {profile?.avatar_url
+                    ? <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                    : <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile?.name?.charAt(0).toUpperCase()}</span>
+                  }
+                </div>
+                <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-surface-high border border-border/30 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 transition-all group shadow-lg">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-secondary group-hover:text-primary transition-colors">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
               </div>
 
               {/* Name */}
@@ -433,8 +468,8 @@ function Dashboard() {
               {/* Info block */}
               <div className="flex flex-col gap-1 font-inter text-[12px] text-text-secondary/50 leading-relaxed px-1">
                 <p>
-                  Your built-in wallet is secured exclusively by your Passkeys. To view your balance or manage stablecoins, visit{' '}
-                  <span className="text-secondary font-grotesk font-bold tracking-wider">City</span>.
+                  To view your balance or manage stablecoins, visit{' '}
+                  <a href="https://city.juvantia.org" className="text-secondary font-grotesk font-bold tracking-wider hover:underline">City</a>.
                 </p>
               </div>
             </div>
@@ -541,7 +576,7 @@ function Dashboard() {
             {/* ── Footer ───────────────────────────────────────────────────── */}
             <div className="flex items-center justify-center py-4">
               <p className="font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/20">
-                Juvantia Auth · Identity &amp; Security Center
+                Juvantia Auth · Security Center
               </p>
             </div>
 
