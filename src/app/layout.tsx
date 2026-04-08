@@ -24,6 +24,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Juvantia Auth",
   description: "Juvantia Identity & Account Center",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
