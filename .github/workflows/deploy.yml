@@ -14,10 +14,51 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/${{ github.event.repository.name }}
-            git config --global --add safe.directory $(pwd)
-            git pull origin main
+            set -e
+            echo "🚀 [DEPLOY] Starting deployment for Juvantia Auth..."
+            
+            # Navigate to project directory
+            TARGET_DIR="/root/${{ github.event.repository.name }}"
+            echo "📂 [DEPLOY] Accessing directory: $TARGET_DIR"
+            cd $TARGET_DIR || { echo "❌ [ERROR] Directory $TARGET_DIR not found!"; exit 1; }
+
+            # Fix Git Ownership
+            git config --global --add safe.directory "$TARGET_DIR"
+
+            # Update Source Code
+            echo "🔄 [DEPLOY] Syncing with origin/main..."
+            git fetch origin main
+            git reset --hard origin/main
+            echo "✅ [DEPLOY] Source code updated to $(git rev-parse --short HEAD)"
+
+            # Environment Setup
+            echo "📝 [DEPLOY] Updating environment variables..."
             echo "${{ secrets.ENV_LOCAL }}" > .env.local
-            docker build -t ghcr.io/${{ github.repository }}:latest .
-            docker compose up -d
+            echo "✅ [DEPLOY] .env.local configured"
+
+            # Build and Launch
+            echo "📦 [DEPLOY] Building Docker image..."
+            if docker build -t ghcr.io/${{ github.repository }}:latest .; then
+              echo "✅ [DEPLOY] Image built successfully"
+            else
+              echo "❌ [ERROR] Docker build failed!"
+              exit 1
+            fi
+
+            echo "🔌 [DEPLOY] Orchestrating containers..."
+            # Stop existing containers to ensure clean start
+            docker compose down || true
+            
+            if docker compose up -d; then
+               echo "✅ [DEPLOY] Containers are up and running"
+            else
+               echo "❌ [ERROR] Docker compose failed!"
+               exit 1
+            fi
+
+            # Cleanup
+            echo "🧹 [DEPLOY] Cleaning up stale images..."
             docker image prune -f || true
+            
+            echo "🏁 [DEPLOY] Deployment finished successfully at $(date)"
+            echo "🚀 Auth Online: https://auth.juvantia.org"
