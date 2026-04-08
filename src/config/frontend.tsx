@@ -17,7 +17,7 @@ export const frontendConfig = (): SuperTokensConfig => {
             Passwordless.init({
                 contactMethod: "EMAIL",
                 style: `
-                    /* Главный контейнер - делаем полностью прозрачным */
+                    /* Главный контейнер */
                     [data-supertokens~=container] {
                         --container-bg: transparent;
                         --primary: #00FF88;
@@ -29,34 +29,42 @@ export const frontendConfig = (): SuperTokensConfig => {
                         background: transparent !important;
                         font-family: var(--font-grotesk), sans-serif;
                     }
-                    /* Сама карточка формы */
+                    /* Карточка */
                     [data-supertokens~=row] {
                         background: transparent !important;
                         padding-bottom: 20px;
                     }
-                    /* Убираем стандартные тексты, так как мы их заменим в компонентах */
-                    [data-supertokens~=headerTitle] {
+                    /* Тексты по умолчанию - убираем */
+                    [data-supertokens~=headerTitle], [data-supertokens~=headerSubtitle] {
                         display: none !important;
                     }
-                    [data-supertokens~=headerSubtitle] {
-                       display: none !important;
+                    /* Метки (Label) */
+                    [data-supertokens~=label] {
+                        font-family: var(--font-cinzel) !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.2em !important;
+                        color: var(--primary) !important;
+                        font-size: 10px !important;
+                        margin-bottom: 10px !important;
+                        opacity: 0.8 !important;
                     }
                     /* Поле ввода */
                     [data-supertokens~=inputContainer] {
-                        background: rgba(10, 15, 14, 0.8) !important;
-                        border: 1px solid rgba(0, 255, 136, 0.15) !important;
+                        background: rgba(10, 15, 14, 0.9) !important;
+                        border: 1px solid rgba(0, 255, 136, 0.2) !important;
                         border-radius: 2px !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
-                        box-shadow: 0 0 15px rgba(0, 255, 136, 0.15) !important;
+                        box-shadow: 0 0 15px rgba(0, 255, 136, 0.2) !important;
                     }
                     [data-supertokens~=input] {
+                        background: transparent !important;
                         color: var(--text-primary) !important;
                         font-family: var(--font-grotesk) !important;
                         letter-spacing: 0.1em;
-                        text-transform: uppercase;
-                        font-size: 13px;
+                        font-size: 14px;
+                        padding: 12px !important;
                     }
                     /* Кнопка */
                     [data-supertokens~=button] {
@@ -65,61 +73,56 @@ export const frontendConfig = (): SuperTokensConfig => {
                         color: var(--primary) !important;
                         font-family: var(--font-grotesk) !important;
                         font-weight: 700 !important;
-                        letter-spacing: 0.3em !important;
+                        letter-spacing: 0.4em !important;
                         text-transform: uppercase !important;
                         border-radius: 2px !important;
-                        height: 54px !important;
+                        height: 56px !important;
                         font-size: 12px !important;
                         transition: all 0.3s ease !important;
+                        margin-top: 10px !important;
                     }
                     [data-supertokens~=button]:hover {
                         background: var(--primary) !important;
                         color: #050a09 !important;
-                        box-shadow: 0 0 25px rgba(0, 255, 136, 0.5) !important;
-                    }
-                    [data-supertokens~=button][data-supertokens~=loading] {
-                        opacity: 0.7;
-                        background: rgba(0, 255, 136, 0.2) !important;
+                        box-shadow: 0 0 30px rgba(0, 255, 136, 0.6) !important;
                     }
                     [data-supertokens~=superTokensBranding] {
-                        opacity: 0.15;
-                        margin-top: 40px;
+                        opacity: 0.1;
+                        margin-top: 50px;
                     }
                 `,
                 override: {
                     components: {
                         PasswordlessHeader: ({ DefaultComponent, ...props }: any) => {
                             return (
-                                <div className="flex flex-col items-center gap-4 mb-10 pt-6">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <h1 className="font-cinzel text-2xl font-bold tracking-[0.3em] bg-gradient-to-r from-[#00FF88] to-[#00D4FF] bg-clip-text text-transparent uppercase text-center">
+                                <div className="flex flex-col items-center gap-4 mb-4 pt-4">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <h1 className="font-cinzel text-2xl font-bold tracking-[0.4em] text-primary uppercase text-center">
                                             Authentication
                                         </h1>
-                                        <div className="w-24 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                                        <div className="w-32 h-[1px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
                                     </div>
-                                    <p className="font-grotesk text-[10px] uppercase tracking-[0.25em] text-text-secondary/40 text-center">
-                                        Secure Identity Access
+                                    <p className="font-grotesk text-[10px] uppercase tracking-[0.3em] text-text-secondary/40 text-center">
+                                        Secure Identity Node
                                     </p>
                                 </div>
                             );
                         },
-                        PasswordlessEmailForm: ({ DefaultComponent, ...props }: any) => {
-                             // Оборачиваем в нашу карточку с размытием
+                        EmailForm: ({ DefaultComponent, ...props }: any) => {
                             return (
-                                <div className="p-8 border border-border/10 bg-[#080D0C]/60 backdrop-blur-xl relative overflow-hidden">
-                                     {/* Эффект свечения сверху */}
-                                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent shadow-[0_0_15px_rgba(0,255,136,0.3)]" />
+                                <div className="p-10 border border-white/5 bg-[#050a09]/80 backdrop-blur-2xl relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
                                     <DefaultComponent {...props} />
                                 </div>
                             );
                         },
-                        PasswordlessUserInputCodeForm: ({ DefaultComponent, ...props }: any) => {
+                        UserInputCodeForm: ({ DefaultComponent, ...props }: any) => {
                             return (
-                                <div className="p-8 border border-border/10 bg-[#080D0C]/60 backdrop-blur-xl relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent shadow-[0_0_15px_rgba(0,255,136,0.3)]" />
-                                    <div className="mb-6 text-center">
-                                        <p className="font-grotesk text-[11px] uppercase tracking-widest text-primary/80">
-                                            Enter the transmission code
+                                <div className="p-10 border border-white/5 bg-[#050a09]/80 backdrop-blur-2xl relative shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+                                    <div className="mb-8 text-center">
+                                        <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-primary/80">
+                                            Security Verification Required
                                         </p>
                                     </div>
                                     <DefaultComponent {...props} />
