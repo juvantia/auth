@@ -34,7 +34,8 @@ jobs:
             # Environment Setup
             echo "📝 [DEPLOY] Updating environment variables..."
             echo "${{ secrets.ENV_LOCAL }}" > .env.local
-            echo "✅ [DEPLOY] .env.local configured"
+            cp .env.local .env
+            echo "✅ [DEPLOY] .env configured"
 
             # Build and Launch
             echo "📦 [DEPLOY] Building Docker image..."

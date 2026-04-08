@@ -8,7 +8,6 @@ services:
     env_file:
       - .env.local
     environment:
-      # We tell the app to find SuperTokens core on the shared network
       - SUPERTOKENS_CONNECTION_URI=http://supertokens:3567
     depends_on:
       - supertokens
@@ -26,10 +25,12 @@ services:
   supertokens:
     image: registry.supertokens.io/supertokens/supertokens-postgresql:latest
     container_name: supertokens
+    env_file:
+      - .env.local
     environment:
       POSTGRESQL_USER: ${POSTGRESQL_USER:-supertokens_user}
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-supertokens_password}
-      POSTGRESQL_HOST: db
+      POSTGRESQL_HOST: ${POSTGRESQL_HOST:-postgres-shared}
       POSTGRESQL_PORT: 5432
       POSTGRESQL_DATABASE_NAME: ${POSTGRESQL_DATABASE_NAME:-supertokens}
     networks:
