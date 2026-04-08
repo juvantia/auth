@@ -109,7 +109,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                 `,
                 override: {
                     components: {
-                        PasswordlessHeader_Override: ({ DefaultComponent, ...props }) => {
+                        PasswordlessHeader_Override: ({ DefaultComponent, ...props }: any) => {
                             return (
                                 <div className="flex flex-col items-center gap-4 mb-10 pt-10">
                                     <div className="flex flex-col items-center gap-1">
@@ -124,17 +124,17 @@ export const frontendConfig = (): SuperTokensConfig => {
                                 </div>
                             );
                         },
-                        PasswordlessEmailForm_Override: ({ DefaultComponent, ...props }) => {
+                        PasswordlessEmailForm_Override: ({ DefaultComponent, ...props }: any) => {
                             return (
                                 <div className="neon-card bg-surface-low/40 backdrop-blur-md border border-border/10 p-1">
                                     <DefaultComponent {...props} />
                                 </div>
                             );
                         },
-                        PasswordlessUserInputCodeForm_Override: ({ DefaultComponent, ...props }) => {
+                        PasswordlessUserInputCodeForm_Override: ({ DefaultComponent, ...props }: any) => {
                             return (
                                 <div className="neon-card bg-surface-low/40 backdrop-blur-md border border-border/10 p-1">
-                                    <div className="px-6 pt-6 -mb-4">
+                                    <div className="px-6 pt-6 -mb-4 text-center">
                                         <p className="font-grotesk text-[11px] uppercase tracking-widest text-primary/80">
                                             Enter security code
                                         </p>
@@ -144,7 +144,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                             );
                         }
                     }
-                }
+                } as any
             }),
             Session.init({
                 tokenTransferMethod: "cookie",
