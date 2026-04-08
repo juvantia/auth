@@ -12,9 +12,63 @@ try {
     if (!e.message?.includes("already been called")) throw e;
 }
 
+async function getProfileByUserId(supertokens_id: string) {
+    try {
+        console.log(`[Profile Helper] Fetching data for ${supertokens_id}`);
+        
+        // 1. Get profile from PostgreSQL
+        const result = await query("SELECT * FROM users WHERE supertokens_id = $1", [supertokens_id]);
+        let user = result.rows[0];
+        
+        // 2. Get info from SuperTokens
+        const userInfo = await supertokens.getUser(supertokens_id);
+        const email = userInfo?.emails[0];
+        
+        // 3. Self-healing: If not in PG but in ST, creating basic record
+        if (!user && email) {
+            console.log(`[Profile Helper] User ${supertokens_id} not found in PG. Auto-creating record...`);
+            const insertResult = await query(
+                "INSERT INTO users (supertokens_id, email, name) VALUES ($1, $2, $3) RETURNING *",
+                [supertokens_id, email, email.split('@')[0]]
+            );
+            user = insertResult.rows[0];
+        }
+
+        if (!user) {
+            return NextResponse.json({ message: "User profile not found" }, { status: 404 });
+        }
+
+        // 4. Checking onboarding status
+        if (!user.name || !user.username || !user.smart_wallet_address) {
+            return NextResponse.json({ 
+                needsOnboarding: true, 
+                email,
+                user: {
+                    name: user.name,
+                    username: user.username,
+                    avatar_url: user.avatar_url,
+                    smart_wallet_address: user.smart_wallet_address
+                }
+            }, { status: 200 });
+        }
+
+        return NextResponse.json({
+            supertokens_id: user.supertokens_id,
+            name: user.name,
+            username: user.username,
+            email: user.email || email,
+            avatar_url: user.avatar_url,
+            smart_wallet_address: user.smart_wallet_address,
+            passkeys: user.passkeys || []
+        }, { status: 200 });
+    } catch (error: any) {
+        console.error("Helper error:", error);
+        return NextResponse.json({ message: error.message }, { status: 500 });
+    }
+}
+
 export async function GET(request: NextRequest) {
     console.log("--- /api/user/profile GET ---");
-    console.log("Cookie header:", request.headers.get("cookie")?.substring(0, 100));
 
     try {
         // 0. Check for Internal Service-to-Service Secret (Bypasses Session/Cookies)
@@ -26,12 +80,8 @@ export async function GET(request: NextRequest) {
         }
 
         return await withSession(request, async (err, session) => {
-            console.log("withSession callback called");
-            console.log("  err:", err ? `${(err as any).type} - ${err.message}` : "null");
-            console.log("  session:", session ? `userId=${session.getUserId()}` : "null/undefined");
-
             if (err) {
-                return new NextResponse(JSON.stringify({ message: "Unauthorized (err)" }), {
+                return new NextResponse(JSON.stringify({ message: "Unauthorized (session error)" }), {
                     status: 401,
                     headers: { "Content-Type": "application/json" },
                 });
@@ -40,64 +90,11 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ message: "Unauthorized (no session)" }, { status: 401 });
             }
 
-                try {
-                const supertokens_id = session.getUserId();
-                console.log(`[GET] Looking for user ${supertokens_id} in PostgreSQL...`);
-                
-                // 1. Get profile from PostgreSQL
-                const result = await query("SELECT * FROM users WHERE supertokens_id = $1", [supertokens_id]);
-                let user = result.rows[0];
-                
-                // 2. Get info from SuperTokens
-                const userInfo = await supertokens.getUser(supertokens_id);
-                const email = userInfo?.emails[0];
-                
-                // 3. Self-healing: If not in PG but in ST, creating basic record
-                if (!user && email) {
-                    console.log(`[GET] User ${supertokens_id} not found in PG. Auto-creating record...`);
-                    const insertResult = await query(
-                        "INSERT INTO users (supertokens_id, email, name) VALUES ($1, $2, $3) RETURNING *",
-                        [supertokens_id, email, email.split('@')[0]]
-                    );
-                    user = insertResult.rows[0];
-                }
-
-                if (!user) {
-                    return NextResponse.json({ message: "User profile not found" }, { status: 404 });
-                }
-
-                // 4. Checking onboarding status
-                if (!user.name || !user.username || !user.smart_wallet_address) {
-                    return NextResponse.json({ 
-                        needsOnboarding: true, 
-                        email,
-                        user: {
-                            name: user.name,
-                            username: user.username,
-                            avatar_url: user.avatar_url,
-                            smart_wallet_address: user.smart_wallet_address
-                        }
-                    }, { status: 200 });
-                }
-
-                console.log(`[GET] Returning profile for ${supertokens_id}`);
-                return NextResponse.json({
-                    supertokens_id: user.supertokens_id,
-                    name: user.name,
-                    username: user.username,
-                    email: user.email || email,
-                    avatar_url: user.avatar_url,
-                    smart_wallet_address: user.smart_wallet_address,
-                    passkeys: user.passkeys || []
-                }, { status: 200 });
-            } catch (error: any) {
-                console.error("Profile GET error:", error);
-                return NextResponse.json({ message: error.message }, { status: 500 });
-            }
+            return await getProfileByUserId(session.getUserId());
         }, { sessionRequired: false });
     } catch (e: any) {
-        console.error("withSession THREW:", e.type, e.message, e.stack);
-        return NextResponse.json({ message: "Internal session error" }, { status: 500 });
+        console.error("GET THREW:", e.message);
+        return NextResponse.json({ message: "Internal error" }, { status: 500 });
     }
 }
 
