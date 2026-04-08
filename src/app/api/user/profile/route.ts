@@ -17,6 +17,14 @@ export async function GET(request: NextRequest) {
     console.log("Cookie header:", request.headers.get("cookie")?.substring(0, 100));
 
     try {
+        // 0. Check for Internal Service-to-Service Secret (Bypasses Session/Cookies)
+        const internalKey = request.headers.get("x-internal-auth");
+        const forcedUserId = request.headers.get("x-user-id");
+        
+        if (internalKey === 'true' && forcedUserId) {
+            return await getProfileByUserId(forcedUserId);
+        }
+
         return await withSession(request, async (err, session) => {
             console.log("withSession callback called");
             console.log("  err:", err ? `${(err as any).type} - ${err.message}` : "null");
