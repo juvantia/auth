@@ -15,8 +15,9 @@ export const frontendConfig = (): SuperTokensConfig => {
         languageTranslations: {
             translations: {
                 en: {
-                    PWLESS_EMAIL_PASSWORDLESS_SECTION_TITLE: "Authentication",
-                    PWLESS_USER_INPUT_CODE_HEADER_TITLE: "Verification",
+                    PWLESS_SIGN_IN_UP_HEADER_TITLE: "Juvantia Auth",
+                    PWLESS_EMAIL_PASSWORDLESS_SECTION_TITLE: "Juvantia Auth",
+                    PWLESS_USER_INPUT_CODE_HEADER_TITLE: "Verification Code",
                     PWLESS_CONTINUE_BUTTON: "CONTINUE",
                 }
             }
