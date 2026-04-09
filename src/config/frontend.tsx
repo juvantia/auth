@@ -137,19 +137,22 @@ export const frontendConfig = (): SuperTokensConfig => {
                         display: flex !important;
                         justify-content: center !important;
                         align-items: center !important;
-                        gap: 10px !important;
+                        gap: 16px !important;
                         width: 100% !important;
                         margin: 20px auto 0 auto !important;
                         cursor: pointer !important;
                         transition: opacity 0.2s !important;
                     }
-                    /* Force arrow to stay with text */
+                    /* Force arrow to stay with text and have space */
                     [data-supertokens~=secondaryText] img,
                     [data-supertokens~=secondaryText] svg,
-                    [data-supertokens~=secondaryText] div[class*="Arrow"] {
+                    [data-supertokens~=secondaryText] [class*="Arrow"] {
                         position: static !important;
                         margin: 0 !important;
+                        margin-right: 12px !important;
                         display: inline-block !important;
+                        width: 12px !important;
+                        height: auto !important;
                     }
                     [data-supertokens~=secondaryText]:hover {
                         opacity: 1 !important;
