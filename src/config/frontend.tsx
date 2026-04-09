@@ -48,7 +48,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=inputContainer] {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
-                        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                        border: none !important;
                         border-radius: 4px !important;
                         height: 44px !important;
                         box-sizing: border-box !important;
