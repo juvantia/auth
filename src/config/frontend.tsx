@@ -46,31 +46,35 @@ export const frontendConfig = (): SuperTokensConfig => {
                         opacity: 0.8;
                     }
                     [data-supertokens~=inputContainer] {
-                        background: #171d1b !important;
+                        background: #262b2a !important;
                         border: 1px solid rgba(0, 255, 136, 0.1) !important;
                         border-radius: 0px !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
-                        background: #080D0C !important;
+                        background: #171d1b !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background-color: #171d1b !important;
-                        background: #171d1b !important;
+                        background-color: transparent !important;
+                        background: transparent !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
                     }
                     input {
+                        background-color: #262b2a !important;
+                        background: #262b2a !important;
+                        color: var(--text-primary) !important;
+                    }
+                    input:focus {
                         background-color: #171d1b !important;
                         background: #171d1b !important;
-                        color: var(--text-primary) !important;
                     }
                     input:-webkit-autofill,
                     input:-webkit-autofill:hover, 
                     input:-webkit-autofill:focus {
                         -webkit-text-fill-color: var(--text-primary) !important;
-                        -webkit-box-shadow: 0 0 0px 1000px #171d1b inset !important;
+                        -webkit-box-shadow: 0 0 0px 1000px #262b2a inset !important;
                         transition: background-color 5000s ease-in-out 0s;
                     }
                     [data-supertokens~=button] {
