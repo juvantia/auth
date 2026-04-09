@@ -82,75 +82,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=divider] {
                         display: none;
                     }
-                `,
-                override: {
-                    components: {
-                        PasswordlessHeader: () => {
-                            return (
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '16px',
-                                    marginBottom: '40px',
-                                    marginTop: '20px',
-                                    width: '100%',
-                                    textAlign: 'center'
-                                }}>
-                                    <h1 style={{
-                                        fontFamily: 'var(--font-cinzel), serif',
-                                        fontSize: '22px',
-                                        fontWeight: 'bold',
-                                        letterSpacing: '0.4em',
-                                        color: '#00FF88',
-                                        textTransform: 'uppercase',
-                                        margin: 0,
-                                        display: 'block'
-                                    }}>
-                                        Juvantia Auth
-                                    </h1>
-                                    <div style={{
-                                        width: '120px',
-                                        height: '1px',
-                                        backgroundColor: 'rgba(0, 255, 136, 0.3)'
-                                    }} />
-                                </div>
-                            );
-                        },
-                        PasswordlessUserInputCodeHeader: () => {
-                            return (
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    gap: '16px',
-                                    marginBottom: '40px',
-                                    marginTop: '20px',
-                                    width: '100%',
-                                    textAlign: 'center'
-                                }}>
-                                    <h1 style={{
-                                        fontFamily: 'var(--font-cinzel), serif',
-                                        fontSize: '22px',
-                                        fontWeight: 'bold',
-                                        letterSpacing: '0.4em',
-                                        color: '#00FF88',
-                                        textTransform: 'uppercase',
-                                        margin: 0,
-                                        display: 'block'
-                                    }}>
-                                        Verification
-                                    </h1>
-                                    <div style={{
-                                        width: '120px',
-                                        height: '1px',
-                                        backgroundColor: 'rgba(0, 255, 136, 0.3)'
-                                    }} />
-                                </div>
-                            );
-                        }
-                    }
-                } as any
+                `
             }),
             Session.init({
                 tokenTransferMethod: "cookie",
