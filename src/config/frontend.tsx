@@ -153,7 +153,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         display: none !important;
                     }
                     [data-supertokens~=resendEmail] {
-                        color: var(--primary) !important;
+                        color: #00D4FF !important;
                         font-family: var(--font-grotesk) !important;
                         text-transform: uppercase !important;
                         letter-spacing: 0.1em !important;
