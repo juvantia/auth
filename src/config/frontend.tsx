@@ -48,25 +48,30 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=inputContainer] {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
-                        border: 1px solid rgba(0, 255, 136, 0.1) !important;
-                        border-radius: 0px !important;
+                        border: 1px solid rgba(0, 10, 5, 0.5) !important;
+                        border-radius: 4px !important;
+                        transition: all 0.2s ease-in-out !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
                         background-color: #171d1b !important;
                         background: #171d1b !important;
+                        border-radius: 8px !important;
+                        box-shadow: 0 0 12px rgba(0, 255, 136, 0.15) !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background-color: #262b2a !important;
-                        background: #262b2a !important;
+                        background-color: transparent !important;
+                        background: transparent !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
                         outline: none !important;
+                        border-radius: 4px !important;
                     }
                     [data-supertokens~=input]:focus {
                         background-color: #171d1b !important;
                         background: #171d1b !important;
+                        border-radius: 8px !important;
                     }
                     input {
                         background-color: #262b2a !important;
