@@ -138,10 +138,18 @@ export const frontendConfig = (): SuperTokensConfig => {
                         justify-content: center !important;
                         align-items: center !important;
                         gap: 6px !important;
-                        width: max-content !important;
+                        width: 100% !important;
                         margin: 20px auto 0 auto !important;
                         cursor: pointer !important;
                         transition: opacity 0.2s !important;
+                    }
+                    /* Force arrow to stay with text */
+                    [data-supertokens~=secondaryText] img,
+                    [data-supertokens~=secondaryText] svg,
+                    [data-supertokens~=secondaryText] div[class*="Arrow"] {
+                        position: static !important;
+                        margin: 0 !important;
+                        display: inline-block !important;
                     }
                     [data-supertokens~=secondaryText]:hover {
                         opacity: 1 !important;
