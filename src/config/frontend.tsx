@@ -160,6 +160,22 @@ export const frontendConfig = (): SuperTokensConfig => {
                         font-size: 10px !important;
                         text-decoration: none !important;
                     }
+                    /* OTP Header Text Alignment */
+                    [data-supertokens~=row] [data-supertokens~=secondaryText] {
+                        display: block !important;
+                        text-align: center !important;
+                        width: 100% !important;
+                        margin-bottom: 25px !important;
+                        opacity: 0.7 !important;
+                        line-height: 1.6 !important;
+                    }
+                    [data-supertokens~=emailSnippet] {
+                        display: block !important;
+                        color: var(--primary) !important;
+                        font-weight: 600 !important;
+                        opacity: 1 !important;
+                        margin-top: 4px !important;
+                    }
                 `
             }),
             Session.init({
