@@ -48,18 +48,18 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=inputContainer] {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
-                        border: 1px solid rgba(0, 10, 5, 0.4) !important;
+                        border: 1px solid rgba(0, 10, 5, 0.5) !important;
                         border-radius: 4px !important;
                         height: 44px !important;
                         box-sizing: border-box !important;
                         padding: 0 !important;
+                        margin: 0 !important;
                         overflow: hidden !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
                         background-color: #171d1b !important;
                         background: #171d1b !important;
-                        box-shadow: 0 0 10px rgba(0, 255, 136, 0.1) !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
@@ -70,7 +70,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         outline: none !important;
                         border: none !important;
                         border-radius: 4px !important;
-                        height: 100% !important;
+                        height: 44px !important;
                         width: 100% !important;
                         padding-left: 15px !important;
                         box-sizing: border-box !important;
@@ -83,8 +83,9 @@ export const frontendConfig = (): SuperTokensConfig => {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
                         color: var(--text-primary) !important;
-                        height: 100% !important;
+                        height: 44px !important;
                         border: none !important;
+                        outline: none !important;
                     }
                     input:focus {
                         background-color: #171d1b !important;
@@ -99,19 +100,17 @@ export const frontendConfig = (): SuperTokensConfig => {
                         text-transform: uppercase !important;
                         letter-spacing: 0.25em !important;
                         border-radius: 4px !important;
-                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
                         height: 44px !important;
                         font-size: 11px !important;
-                        margin-top: 15px !important;
+                        margin-top: 20px !important;
                         box-sizing: border-box !important;
                     }
                     [data-supertokens~=button]:hover {
                         background-color: var(--primary) !important;
                         color: #050a09 !important;
-                        box-shadow: 0 0 20px rgba(0, 255, 136, 0.2) !important;
                     }
                     [data-supertokens~=superTokensBranding] {
-                        opacity: 0.03;
+                        display: none;
                     }
                     [data-supertokens~=divider] {
                         display: none;
