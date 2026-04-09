@@ -87,21 +87,65 @@ export const frontendConfig = (): SuperTokensConfig => {
                     components: {
                         PasswordlessHeader: () => {
                             return (
-                                <div className="flex flex-col items-center gap-4 mb-4 pt-4 w-full">
-                                    <h1 className="font-cinzel text-xl font-bold tracking-[0.4em] text-[#00FF88] uppercase text-center block" style={{ color: '#00FF88' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '16px',
+                                    marginBottom: '40px',
+                                    marginTop: '20px',
+                                    width: '100%',
+                                    textAlign: 'center'
+                                }}>
+                                    <h1 style={{
+                                        fontFamily: 'var(--font-cinzel), serif',
+                                        fontSize: '22px',
+                                        fontWeight: 'bold',
+                                        letterSpacing: '0.4em',
+                                        color: '#00FF88',
+                                        textTransform: 'uppercase',
+                                        margin: 0,
+                                        display: 'block'
+                                    }}>
                                         Juvantia Auth
                                     </h1>
-                                    <div className="w-32 h-[1px] bg-[#00FF88]/30" />
+                                    <div style={{
+                                        width: '120px',
+                                        height: '1px',
+                                        backgroundColor: 'rgba(0, 255, 136, 0.3)'
+                                    }} />
                                 </div>
                             );
                         },
                         PasswordlessUserInputCodeHeader: () => {
                             return (
-                                <div className="flex flex-col items-center gap-4 mb-4 pt-4 w-full">
-                                    <h1 className="font-cinzel text-xl font-bold tracking-[0.4em] text-[#00FF88] uppercase text-center block" style={{ color: '#00FF88' }}>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '16px',
+                                    marginBottom: '40px',
+                                    marginTop: '20px',
+                                    width: '100%',
+                                    textAlign: 'center'
+                                }}>
+                                    <h1 style={{
+                                        fontFamily: 'var(--font-cinzel), serif',
+                                        fontSize: '22px',
+                                        fontWeight: 'bold',
+                                        letterSpacing: '0.4em',
+                                        color: '#00FF88',
+                                        textTransform: 'uppercase',
+                                        margin: 0,
+                                        display: 'block'
+                                    }}>
                                         Verification
                                     </h1>
-                                    <div className="w-32 h-[1px] bg-[#00FF88]/30" />
+                                    <div style={{
+                                        width: '120px',
+                                        height: '1px',
+                                        backgroundColor: 'rgba(0, 255, 136, 0.3)'
+                                    }} />
                                 </div>
                             );
                         }
