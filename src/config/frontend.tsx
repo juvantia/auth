@@ -51,13 +51,14 @@ export const frontendConfig = (): SuperTokensConfig => {
                         border: 1px solid rgba(0, 10, 5, 0.4) !important;
                         border-radius: 4px !important;
                         transition: all 0.2s ease-in-out !important;
+                        height: 44px !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
                         background-color: #171d1b !important;
                         background: #171d1b !important;
-                        border-radius: 8px !important;
-                        box-shadow: 0 0 12px rgba(0, 255, 136, 0.15) !important;
+                        border-radius: 6px !important;
+                        box-shadow: 0 0 12px rgba(0, 255, 136, 0.1) !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
@@ -71,7 +72,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=input]:focus {
                         background-color: #171d1b !important;
                         background: #171d1b !important;
-                        border-radius: 8px !important;
+                        border-radius: 6px !important;
                     }
                     input, input:internal-autofill-selected {
                         background-color: #262b2a !important;
@@ -90,23 +91,26 @@ export const frontendConfig = (): SuperTokensConfig => {
                         transition: background-color 5000s ease-in-out 0s;
                     }
                     [data-supertokens~=button] {
-                        background-color: rgba(0, 255, 136, 0.05) !important;
+                        background-color: rgba(0, 255, 136, 0.03) !important;
                         border: 1px solid var(--primary) !important;
                         color: var(--primary) !important;
-                        font-family: var(--font-grotesk);
-                        font-weight: bold;
-                        letter-spacing: 0.3em;
-                        border-radius: 2px;
-                        transition: all 0.3s;
-                        height: 50px !important;
+                        font-family: var(--font-grotesk) !important;
+                        font-weight: 600 !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.25em !important;
+                        border-radius: 4px !important;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                        height: 44px !important;
+                        font-size: 12px !important;
+                        margin-top: 10px !important;
                     }
                     [data-supertokens~=button]:hover {
                         background-color: var(--primary) !important;
                         color: #050a09 !important;
-                        box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+                        box-shadow: 0 0 20px rgba(0, 255, 136, 0.3) !important;
                     }
                     [data-supertokens~=superTokensBranding] {
-                        opacity: 0.1;
+                        opacity: 0.05;
                     }
                     [data-supertokens~=divider] {
                         display: none;
