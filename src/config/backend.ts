@@ -49,35 +49,31 @@ export const backendConfig = (): TypeInput => {
                                     to: input.email,
                                     subject: "Your Login Code",
                                     html: `
-                                        <div style="background-color: #111414; background-image: radial-gradient(#1a1f1e 1px, transparent 1px); background-size: 20px 20px; color: #fff; padding: 60px 20px; text-align: center; border-radius: 0; border: 1px solid #1a1f1e; max-width: 600px; margin: auto;">
-                                            <style>
-                                                @import url('https://fonts.googleapis.com/css2?family=Marcellus&family=Space+Grotesk:wght@400;600&display=swap');
-                                            </style>
-                                            
-                                            <!-- Branding -->
-                                            <h1 style="font-family: 'Marcellus', serif; font-weight: 400; font-size: 32px; text-transform: uppercase; letter-spacing: 0.35em; margin-bottom: 40px; color: #00FF88;">
-                                                Juvantia Auth
-                                            </h1>
-                                            
-                                            <p style="font-family: 'Space Grotesk', sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 0.25em; color: #66706e; margin-bottom: 20px;">
-                                                Security Verification
-                                            </p>
-                                            
-                                            <div style="background: rgba(0, 255, 136, 0.03); border: 1px solid rgba(0, 255, 136, 0.1); padding: 40px 20px; margin: 20px 0; border-radius: 4px;">
-                                                <p style="font-family: 'Space Grotesk', sans-serif; font-size: 14px; color: #a1aeac; margin-bottom: 30px;">Your authentication code:</p>
-                                                <div style="font-family: 'Space Grotesk', sans-serif; font-size: 52px; font-weight: 600; color: #00FF88; letter-spacing: 14px; margin-bottom: 10px; line-height: 1;">
-                                                    ${input.userInputCode}
-                                                </div>
-                                            </div>
-                                            
-                                            <p style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; color: #4a5452; margin-top: 40px; max-width: 320px; margin-left: auto; margin-right: auto; line-height: 1.6;">
-                                                This code was requested to access the Juvantia network. If you did not initiate this, please secure your account.
-                                            </p>
-                                            
-                                            <div style="margin-top: 60px; border-top: 1px solid #1a1f1e; padding-top: 20px;">
-                                                <p style="font-family: 'Space Grotesk', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.15em; color: #333d3b;">
-                                                    &copy; Juvantia Foundation
+                                        <div style="background-color: #0b0d0c; margin: 0; padding: 0; min-height: 100vh;">
+                                            <div style="background-color: #111414; background-image: radial-gradient(#1a1f1e 1px, transparent 1px); background-size: 20px 20px; color: #fff; padding: 80px 20px; text-align: center; max-width: 600px; margin: auto; border-left: 1px solid #1a1f1e; border-right: 1px solid #1a1f1e; min-height: 400px;">
+                                                <style>
+                                                    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap');
+                                                </style>
+                                                
+                                                <p style="font-family: 'Space Grotesk', sans-serif; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3em; color: #4a5452; margin-bottom: 60px;">
+                                                    Identity Verification
                                                 </p>
+                                                
+                                                <div style="margin: 40px 0;">
+                                                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 64px; font-weight: 600; color: #00FF88; letter-spacing: 16px; line-height: 1; text-shadow: 0 0 20px rgba(0, 255, 136, 0.2);">
+                                                        ${input.userInputCode}
+                                                    </div>
+                                                </div>
+                                                
+                                                <p style="font-family: 'Space Grotesk', sans-serif; font-size: 13px; color: #66706e; margin-top: 60px; max-width: 300px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                                                    Enter this code in the Juvantia Auth interface to complete your session start.
+                                                </p>
+                                                
+                                                <div style="margin-top: 100px; border-top: 1px solid #1a1f1e; padding-top: 30px;">
+                                                    <p style="font-family: 'Space Grotesk', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: #2a312f;">
+                                                        &copy; Juvantia Foundation
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     `,
