@@ -60,7 +60,7 @@ export const backendConfig = (): TypeInput => {
                                                 </p>
                                                 
                                                 <div style="margin: 40px 0;">
-                                                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 64px; font-weight: 600; color: #00FF88; letter-spacing: 16px; line-height: 1; text-shadow: 0 0 20px rgba(0, 255, 136, 0.2);">
+                                                    <div style="font-family: 'Space Grotesk', sans-serif; font-size: 48px; font-weight: 600; color: #00FF88; letter-spacing: 12px; line-height: 1; text-shadow: 0 0 20px rgba(0, 255, 136, 0.2);">
                                                         ${input.userInputCode}
                                                     </div>
                                                 </div>
