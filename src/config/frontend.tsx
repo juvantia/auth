@@ -1,3 +1,4 @@
+import React from "react";
 import Passwordless from "supertokens-auth-react/recipe/passwordless";
 import Session from "supertokens-auth-react/recipe/session";
 import { SuperTokensConfig } from "supertokens-auth-react/lib/build/types";
@@ -12,16 +13,6 @@ export const frontendConfig = (): SuperTokensConfig => {
             apiBasePath: "/api/auth/",
             websiteBasePath: "/auth",
         },
-        languageTranslations: {
-            translations: {
-                en: {
-                    PWLESS_SIGN_IN_UP_HEADER_TITLE: "Juvantia Auth",
-                    PWLESS_EMAIL_PASSWORDLESS_SECTION_TITLE: "Juvantia Auth",
-                    PWLESS_USER_INPUT_CODE_HEADER_TITLE: "Verification Code",
-                    PWLESS_CONTINUE_BUTTON: "CONTINUE",
-                }
-            }
-        },
         recipeList: [
             Passwordless.init({
                 contactMethod: "EMAIL",
@@ -35,19 +26,16 @@ export const frontendConfig = (): SuperTokensConfig => {
                         border: 1px solid rgba(0, 255, 136, 0.15);
                         box-shadow: 0 20px 40px rgba(0,0,0,0.6);
                         border-radius: 2px;
+                        font-family: var(--font-grotesk), sans-serif;
                     }
                     [data-supertokens~=row] {
                         background-color: var(--container-bg) !important;
                     }
                     [data-supertokens~=headerTitle] {
-                        font-family: var(--font-cinzel), serif !important;
-                        text-transform: uppercase !important;
-                        letter-spacing: 0.25em !important;
-                        color: var(--primary) !important;
-                        font-weight: 700 !important;
+                        display: none !important;
                     }
                     [data-supertokens~=headerSubtitle] {
-                        display: none;
+                        display: none !important;
                     }
                     [data-supertokens~=label] {
                         color: var(--text-secondary);
@@ -81,6 +69,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         letter-spacing: 0.3em;
                         border-radius: 2px;
                         transition: all 0.3s;
+                        height: 50px !important;
                     }
                     [data-supertokens~=button]:hover {
                         background-color: var(--primary) !important;
@@ -88,9 +77,36 @@ export const frontendConfig = (): SuperTokensConfig => {
                         box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
                     }
                     [data-supertokens~=superTokensBranding] {
-                        opacity: 0.2;
+                        opacity: 0.1;
                     }
-                `
+                    [data-supertokens~=divider] {
+                        display: none;
+                    }
+                `,
+                override: {
+                    components: {
+                        PasswordlessHeader: () => {
+                            return (
+                                <div className="flex flex-col items-center gap-4 mb-4 pt-4 w-full">
+                                    <h1 className="font-cinzel text-xl font-bold tracking-[0.4em] text-[#00FF88] uppercase text-center block" style={{ color: '#00FF88' }}>
+                                        Juvantia Auth
+                                    </h1>
+                                    <div className="w-32 h-[1px] bg-[#00FF88]/30" />
+                                </div>
+                            );
+                        },
+                        PasswordlessUserInputCodeHeader: () => {
+                            return (
+                                <div className="flex flex-col items-center gap-4 mb-4 pt-4 w-full">
+                                    <h1 className="font-cinzel text-xl font-bold tracking-[0.4em] text-[#00FF88] uppercase text-center block" style={{ color: '#00FF88' }}>
+                                        Verification
+                                    </h1>
+                                    <div className="w-32 h-[1px] bg-[#00FF88]/30" />
+                                </div>
+                            );
+                        }
+                    }
+                } as any
             }),
             Session.init({
                 tokenTransferMethod: "cookie",
