@@ -48,7 +48,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                     [data-supertokens~=inputContainer] {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
-                        border: 1px solid rgba(0, 10, 5, 0.5) !important;
+                        border: 1px solid rgba(0, 10, 5, 0.4) !important;
                         border-radius: 4px !important;
                         transition: all 0.2s ease-in-out !important;
                     }
@@ -61,8 +61,8 @@ export const frontendConfig = (): SuperTokensConfig => {
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background-color: transparent !important;
-                        background: transparent !important;
+                        background-color: #262b2a !important;
+                        background: #262b2a !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
                         outline: none !important;
@@ -73,7 +73,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         background: #171d1b !important;
                         border-radius: 8px !important;
                     }
-                    input {
+                    input, input:internal-autofill-selected {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
                         color: var(--text-primary) !important;
