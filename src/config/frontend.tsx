@@ -56,6 +56,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         margin: 0 !important;
                         display: flex !important;
                         align-items: center !important;
+                        -webkit-text-size-adjust: 100% !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border: 1px solid var(--primary) !important;
@@ -67,7 +68,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         background-color: #262b2a !important;
                         background: #262b2a !important;
                         font-family: var(--font-grotesk) !important;
-                        font-size: 14px !important;
+                        font-size: 16px !important;
                         outline: none !important;
                         border: none !important;
                         box-shadow: none !important;
@@ -94,6 +95,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         width: 100% !important;
                         margin: 0 !important;
                         -webkit-appearance: none !important;
+                        font-size: 16px !important;
                     }
                     input:focus {
                         background-color: #171d1b !important;
