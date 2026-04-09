@@ -52,6 +52,10 @@ export const frontendConfig = (): SuperTokensConfig => {
                         border-radius: 4px !important;
                         height: 44px !important;
                         box-sizing: border-box !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        display: flex !important;
+                        align-items: center !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border: 1px solid var(--primary) !important;
@@ -60,28 +64,40 @@ export const frontendConfig = (): SuperTokensConfig => {
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background-color: transparent !important;
-                        background: transparent !important;
+                        background-color: #262b2a !important;
+                        background: #262b2a !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
                         outline: none !important;
                         border: none !important;
                         box-shadow: none !important;
-                        height: 44px !important;
+                        height: 100% !important;
                         width: 100% !important;
                         padding-left: 15px !important;
                         box-sizing: border-box !important;
                         -webkit-appearance: none !important;
+                        margin: 0 !important;
+                        border-radius: 4px !important;
+                    }
+                    [data-supertokens~=input]:focus {
+                        background-color: #171d1b !important;
+                        background: #171d1b !important;
                     }
                     input {
-                        background-color: transparent !important;
-                        background: transparent !important;
+                        background-color: #262b2a !important;
+                        background: #262b2a !important;
                         color: var(--text-primary) !important;
                         border: none !important;
                         outline: none !important;
                         box-shadow: none !important;
-                        height: 44px !important;
+                        height: 100% !important;
+                        width: 100% !important;
+                        margin: 0 !important;
                         -webkit-appearance: none !important;
+                    }
+                    input:focus {
+                        background-color: #171d1b !important;
+                        background: #171d1b !important;
                     }
                     input:-webkit-autofill {
                         -webkit-box-shadow: 0 0 0px 1000px #262b2a inset !important;
