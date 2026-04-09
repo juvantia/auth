@@ -137,8 +137,9 @@ export const frontendConfig = (): SuperTokensConfig => {
                         display: flex !important;
                         justify-content: center !important;
                         align-items: center !important;
-                        gap: 8px !important;
-                        margin-top: 20px !important;
+                        gap: 6px !important;
+                        width: max-content !important;
+                        margin: 20px auto 0 auto !important;
                         cursor: pointer !important;
                         transition: opacity 0.2s !important;
                     }
