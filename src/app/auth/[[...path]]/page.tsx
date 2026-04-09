@@ -22,7 +22,7 @@ export default function AuthPage() {
                 {/* Branding */}
                 <div className="flex flex-col items-center gap-0.5">
                     <h1 
-                        className="text-xl font-normal uppercase tracking-[0.3em] bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" 
+                        className="text-2xl font-normal uppercase tracking-[0.3em] bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" 
                         style={{ fontFamily: 'var(--font-cinzel)' }}
                     >
                         Juvantia Auth
