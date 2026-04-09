@@ -46,25 +46,25 @@ export const frontendConfig = (): SuperTokensConfig => {
                         opacity: 0.8;
                     }
                     [data-supertokens~=inputContainer] {
-                        background-color: #262b2a !important;
-                        background: #262b2a !important;
-                        border: 1px solid rgba(0, 10, 5, 0.5) !important;
+                        background-color: #080D0C !important;
+                        background: #080D0C !important;
+                        border: 1px solid #171d1b !important;
                         border-radius: 4px !important;
                         height: 44px !important;
                         box-sizing: border-box !important;
                         padding: 0 !important;
                         margin: 0 !important;
-                        overflow: hidden !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
                         background-color: #171d1b !important;
                         background: #171d1b !important;
+                        box-shadow: 0 0 15px rgba(0, 255, 136, 0.1) !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background-color: #262b2a !important;
-                        background: #262b2a !important;
+                        background-color: transparent !important;
+                        background: transparent !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
                         outline: none !important;
@@ -75,21 +75,13 @@ export const frontendConfig = (): SuperTokensConfig => {
                         padding-left: 15px !important;
                         box-sizing: border-box !important;
                     }
-                    [data-supertokens~=input]:focus {
-                        background-color: #171d1b !important;
-                        background: #171d1b !important;
-                    }
                     input, input:internal-autofill-selected {
-                        background-color: #262b2a !important;
-                        background: #262b2a !important;
+                        background-color: transparent !important;
+                        background: transparent !important;
                         color: var(--text-primary) !important;
                         height: 44px !important;
                         border: none !important;
                         outline: none !important;
-                    }
-                    input:focus {
-                        background-color: #171d1b !important;
-                        background: #171d1b !important;
                     }
                     [data-supertokens~=button] {
                         background-color: rgba(0, 255, 136, 0.03) !important;
@@ -110,7 +102,8 @@ export const frontendConfig = (): SuperTokensConfig => {
                         color: #050a09 !important;
                     }
                     [data-supertokens~=superTokensBranding] {
-                        display: none;
+                        opacity: 0.2;
+                        margin-top: 10px !important;
                     }
                     [data-supertokens~=divider] {
                         display: none;
