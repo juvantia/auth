@@ -56,9 +56,22 @@ export const frontendConfig = (): SuperTokensConfig => {
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
-                        background: transparent !important;
+                        background-color: #171d1b !important;
+                        background: #171d1b !important;
                         font-family: var(--font-grotesk) !important;
                         font-size: 14px !important;
+                    }
+                    input {
+                        background-color: #171d1b !important;
+                        background: #171d1b !important;
+                        color: var(--text-primary) !important;
+                    }
+                    input:-webkit-autofill,
+                    input:-webkit-autofill:hover, 
+                    input:-webkit-autofill:focus {
+                        -webkit-text-fill-color: var(--text-primary) !important;
+                        -webkit-box-shadow: 0 0 0px 1000px #171d1b inset !important;
+                        transition: background-color 5000s ease-in-out 0s;
                     }
                     [data-supertokens~=button] {
                         background-color: rgba(0, 255, 136, 0.05) !important;
