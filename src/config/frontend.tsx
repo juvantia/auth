@@ -26,23 +26,24 @@ export const frontendConfig = (): SuperTokensConfig => {
                 contactMethod: "EMAIL",
                 style: `
                     [data-supertokens~=container] {
-                        --container-bg: #050a09;
+                        --container-bg: #262b2a;
                         --primary: #00FF88;
                         --text-primary: #dfe4e1;
                         --text-secondary: #b9cbb9;
                         background-color: var(--container-bg) !important;
-                        border: 1px solid rgba(0, 255, 136, 0.1);
-                        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-                        border-radius: 4px;
+                        border: 1px solid rgba(0, 255, 136, 0.15);
+                        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+                        border-radius: 2px;
                     }
                     [data-supertokens~=row] {
                         background-color: var(--container-bg) !important;
                     }
                     [data-supertokens~=headerTitle] {
                         font-family: var(--font-cinzel), serif !important;
-                        text-transform: uppercase;
-                        letter-spacing: 0.2em;
-                        color: var(--primary);
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.25em !important;
+                        color: var(--primary) !important;
+                        font-weight: 700 !important;
                     }
                     [data-supertokens~=headerSubtitle] {
                         display: none;
@@ -51,20 +52,24 @@ export const frontendConfig = (): SuperTokensConfig => {
                         color: var(--text-secondary);
                         font-family: var(--font-grotesk);
                         text-transform: uppercase;
-                        letter-spacing: 0.1em;
-                        font-size: 11px;
-                        opacity: 0.7;
+                        letter-spacing: 0.15em;
+                        font-size: 10px;
+                        opacity: 0.8;
                     }
                     [data-supertokens~=inputContainer] {
-                        background: #0a0f0e !important;
-                        border: 1px solid rgba(0, 255, 136, 0.2) !important;
+                        background: #171d1b !important;
+                        border: 1px solid rgba(0, 255, 136, 0.1) !important;
+                        border-radius: 0px !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border-color: var(--primary) !important;
+                        background: #080D0C !important;
                     }
                     [data-supertokens~=input] {
                         color: var(--text-primary) !important;
                         background: transparent !important;
+                        font-family: var(--font-grotesk) !important;
+                        font-size: 14px !important;
                     }
                     [data-supertokens~=button] {
                         background-color: rgba(0, 255, 136, 0.05) !important;
