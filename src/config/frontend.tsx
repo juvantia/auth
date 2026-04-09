@@ -118,15 +118,47 @@ export const frontendConfig = (): SuperTokensConfig => {
                         font-size: 11px !important;
                         margin-top: 15px !important;
                     }
-                    [data-supertokens~=button]:hover {
+                    [data-supertokens~=button]:hover:not(:disabled) {
                         background-color: var(--primary) !important;
                         color: #050a09 !important;
+                    }
+                    [data-supertokens~=button]:disabled {
+                        opacity: 0.6 !important;
+                        cursor: not-allowed !important;
+                    }
+                    [data-supertokens~=secondaryText] {
+                        color: var(--text-secondary) !important;
+                        font-family: var(--font-grotesk) !important;
+                        font-size: 11px !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.1em !important;
+                        text-decoration: none !important;
+                        opacity: 0.5 !important;
+                        display: flex !important;
+                        justify-content: center !important;
+                        align-items: center !important;
+                        gap: 8px !important;
+                        margin-top: 20px !important;
+                        cursor: pointer !important;
+                        transition: opacity 0.2s !important;
+                    }
+                    [data-supertokens~=secondaryText]:hover {
+                        opacity: 1 !important;
+                        color: var(--primary) !important;
                     }
                     [data-supertokens~=superTokensBranding] {
                         display: none !important;
                     }
                     [data-supertokens~=divider] {
                         display: none !important;
+                    }
+                    [data-supertokens~=resendEmail] {
+                        color: var(--primary) !important;
+                        font-family: var(--font-grotesk) !important;
+                        text-transform: uppercase !important;
+                        letter-spacing: 0.1em !important;
+                        font-size: 10px !important;
+                        text-decoration: none !important;
                     }
                 `
             }),
