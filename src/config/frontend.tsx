@@ -52,7 +52,6 @@ export const frontendConfig = (): SuperTokensConfig => {
                         border-radius: 4px !important;
                         height: 44px !important;
                         box-sizing: border-box !important;
-                        overflow: hidden !important;
                     }
                     [data-supertokens~=inputContainer]:focus-within {
                         border: 1px solid var(--primary) !important;
@@ -68,7 +67,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         outline: none !important;
                         border: none !important;
                         box-shadow: none !important;
-                        height: 42px !important;
+                        height: 44px !important;
                         width: 100% !important;
                         padding-left: 15px !important;
                         box-sizing: border-box !important;
@@ -81,6 +80,7 @@ export const frontendConfig = (): SuperTokensConfig => {
                         border: none !important;
                         outline: none !important;
                         box-shadow: none !important;
+                        height: 44px !important;
                         -webkit-appearance: none !important;
                     }
                     input:-webkit-autofill {
