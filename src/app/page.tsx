@@ -227,14 +227,43 @@ function Dashboard() {
     setTimeout(() => setCopiedIdx(null), 2000);
   };
 
+  useEffect(() => {
+    if (profile && !needsOnboarding) {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('popup') === 'true') {
+        setTimeout(() => {
+          window.close();
+        }, 2000);
+      }
+    }
+  }, [profile, needsOnboarding]);
+
   // ─── Render ─────────────────────────────────────────────────────────────────
   if (session.loading || isLoading) return <LoadingScreen />;
+
+  const isPopup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('popup') === 'true';
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
       {/* ── Mobile Shell ── */}
       <div className="w-full max-w-sm flex flex-col gap-5">
 
+        {isPopup && profile && !needsOnboarding && (
+          <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-500">
+            <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,255,136,0.15)]">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h2 className="font-cinzel text-xl uppercase tracking-widest text-primary mb-2">Access Granted</h2>
+            <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-text-secondary/60">
+              Synchronizing with Forum...
+            </p>
+            <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/30 mt-12">
+              This window will close automatically
+            </p>
+          </div>
+        )}
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <header className="flex items-center justify-between mb-2">
           <div className="flex flex-col gap-0.5">
