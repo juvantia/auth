@@ -4,12 +4,12 @@ import { TypeInput } from "supertokens-node/types";
 import Dashboard from "supertokens-node/recipe/dashboard";
 import JWT from "supertokens-node/recipe/jwt";
 import supertokens from "supertokens-node";
+import { query } from "../lib/db";
 
 export const backendConfig = (): TypeInput => {
     return {
         framework: "custom",
         supertokens: {
-            // https://try.supertokens.com is for demo purposes. Replace this with the address of your self-hosted instance.
             connectionURI: process.env.SUPERTOKENS_CONNECTION_URI || "http://localhost:3567",
             apiKey: process.env.SUPERTOKENS_API_KEY,
         },
@@ -24,7 +24,6 @@ export const backendConfig = (): TypeInput => {
             Passwordless.init({
                 contactMethod: "EMAIL",
                 flowType: "USER_INPUT_CODE",
-                // Здесь будет логика отправки писем через SMTP заказчика
                 emailDelivery: {
                     override: (originalImplementation) => {
                         return {
@@ -37,7 +36,7 @@ export const backendConfig = (): TypeInput => {
                                 const transporter = nodemailer.createTransport({
                                     host: process.env.SMTP_HOST,
                                     port: Number(process.env.SMTP_PORT),
-                                    secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
+                                    secure: Number(process.env.SMTP_PORT) === 465,
                                     auth: {
                                         user: process.env.SMTP_USER,
                                         pass: process.env.SMTP_PASS,
@@ -93,10 +92,8 @@ export const backendConfig = (): TypeInput => {
             Session.init({
                 cookieDomain: ".juvantia.org",
                 cookieSameSite: "lax",
-                // Force cookie mode explicitly on the backend
                 getTokenTransferMethod: () => "cookie",
                 antiCsrf: "NONE",
-                // ОЧЕНЬ ВАЖНО: разрешить JS читать токен и генерировать именно JWT!
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
                 override: {
                     functions: (originalImplementation) => {
@@ -105,6 +102,7 @@ export const backendConfig = (): TypeInput => {
                             createNewSession: async function (input) {
                                 let email = undefined;
                                 let name = undefined;
+                                let username = undefined;
                                 let avatar_url = undefined;
 
                                 try {
@@ -113,25 +111,21 @@ export const backendConfig = (): TypeInput => {
                                         email = user.emails[0];
                                     }
 
-                                    // TODO: Fix path for standalone build
-                                    // Fetch additional info from our MongoDB User model
-                                    /*
-                                    const User = (await import("../models/User")).default;
-                                    const dbUser = await User.findOne({ supertokens_id: input.userId });
-                                    if (dbUser) {
-                                        name = dbUser.name;
-                                        avatar_url = dbUser.avatar_url;
+                                    // Fetch profile from PostgreSQL
+                                    const result = await query("SELECT name, username, avatar_url FROM users WHERE supertokens_id = $1", [input.userId]);
+                                    if (result.rows.length > 0) {
+                                        name = result.rows[0].name;
+                                        username = result.rows[0].username;
+                                        avatar_url = result.rows[0].avatar_url;
                                     }
-                                    */
                                 } catch (err) {
                                     console.error("Juvantia Auth: Error fetching user in createNewSession", err);
                                 }
 
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
-                                    // Alchemy custom audience
-                                    aud: "b86126bc-ddd4-4ada-948f-3f5a3b81eb2e",
                                     name,
+                                    username,
                                     avatar_url
                                 };
 
