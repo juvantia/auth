@@ -200,6 +200,7 @@ export const frontendConfig = (): SuperTokensConfig => {
             if (redirect) {
                 return decodeURIComponent(redirect);
             }
+            return "/";
         }
         return undefined;
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import SuperTokens from 'supertokens-auth-react';
+import SuperTokens, { SuperTokensWrapper } from 'supertokens-auth-react';
 import { frontendConfig } from '@/config/frontend';
 
 if (typeof window !== 'undefined') {
@@ -9,5 +9,5 @@ if (typeof window !== 'undefined') {
 }
 
 export const SuperTokensProvider = ({ children }: { children: React.ReactNode }) => {
-    return <>{children}</>;
+    return <SuperTokensWrapper>{children}</SuperTokensWrapper>;
 };
