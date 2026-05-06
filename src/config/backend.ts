@@ -125,8 +125,7 @@ export const backendConfig = (): TypeInput => {
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
                                     name,
-                                    username,
-                                    avatar_url
+                                    username
                                 };
 
                                 if (email) {
