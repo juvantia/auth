@@ -8,7 +8,7 @@ import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
 import { http, createPublicClient, type Chain } from "viem";
 import { arcTestnet } from "viem/chains";
 
-const PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || process.env.PROJECT_ID || "5e727b99-00c4-4d64-83a6-95b0a29ff2a3";
+const PROJECT_ID = process.env.NEXT_PUBLIC_PROJECT_ID || process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || "5e727b99-00c4-4d64-83a6-95b0a29ff2a3";
 const BUNDLER_URL = `https://rpc.zerodev.app/api/v3/${PROJECT_ID}/chain/5042002`;
 const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${PROJECT_ID}`;
 
