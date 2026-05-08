@@ -18,7 +18,7 @@ This repository is made public to ensure full transparency regarding how user id
 - **Framework**: Next.js (App Router)
 - **Identity**: SuperTokens (Passwordless OTP)
 - **Account Abstraction**: ZeroDev (Kernel v3.1)
-- **Network**: Arc Testnet (EVM)
+- **Network**: EVM-compatible
 - **Storage**: PostgreSQL
 
 ## 📂 Repository Structure
