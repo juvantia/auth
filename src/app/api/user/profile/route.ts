@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
             }
 
-            // Получаем актуальный email из SuperTokens
+            // Get the current email from SuperTokens
             const userInfo = await supertokens.getUser(session.getUserId());
             const email = userInfo?.emails[0];
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
             }
 
-            // Умный апдейт: ищем по id
+            // Smart update: search by id
             const updateObj: Partial<IUser> = { 
                 email: email || '', 
                 name, 

@@ -29,7 +29,7 @@ export async function getKernelClient(params: {
         let webAuthnKey: any;
 
         if (params.username) {
-            // Режим Passkey (WebAuthn) - Kernel v3 Style
+            // Passkey Mode (WebAuthn) - Kernel v3 Style
             const rpID = window.location.hostname === "localhost" ? "localhost" : "auth.juvantia.org";
             
             webAuthnKey = await toWebAuthnKey({
@@ -51,7 +51,7 @@ export async function getKernelClient(params: {
             throw new Error("Username must be provided for Passkey creation");
         }
 
-        // Создаем Kernel Account (v3.1)
+        // Create Kernel Account (v3.1)
         const account = await createKernelAccount(publicClient, {
             plugins: {
                 sudo: validator,
@@ -60,7 +60,7 @@ export async function getKernelClient(params: {
             kernelVersion: KERNEL_V3_1,
         });
 
-        // Создаем клиент для взаимодействия с аккаунтом
+        // Create client for account interaction
         const client = createKernelAccountClient({
             account,
             chain: arcTestnet as Chain,

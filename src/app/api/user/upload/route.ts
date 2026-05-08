@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
             const bytes = await file.arrayBuffer();
             const buffer = Buffer.from(bytes);
 
-            // Путь для хранения аватарок (папка public/uploads)
+            // Path for storing avatars (public/uploads folder)
             const uploadDir = join(process.cwd(), "public", "uploads");
             await mkdir(uploadDir, { recursive: true });
 

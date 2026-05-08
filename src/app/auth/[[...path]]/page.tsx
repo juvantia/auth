@@ -11,7 +11,7 @@ export default function AuthPage() {
         if (canHandleRoute([PasswordlessPreBuiltUI])) {
             setComponentToRender(getRoutingComponent([PasswordlessPreBuiltUI]));
         } else {
-            // Если маршрут не относится к SuperTokens, можно редиректнуть или показать 404
+            // If the route doesn't belong to SuperTokens, we can redirect or show 404
             window.location.href = '/';
         }
     }, []);
