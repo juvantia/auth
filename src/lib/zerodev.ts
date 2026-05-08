@@ -6,10 +6,10 @@ import { toPasskeyValidator, PasskeyValidatorContractVersion } from "@zerodev/pa
 import { toWebAuthnKey, WebAuthnMode } from "@zerodev/webauthn-key";
 import { KERNEL_V3_1, getEntryPoint } from "@zerodev/sdk/constants";
 import { http, createPublicClient, type Chain } from "viem";
-import { baseSepolia } from "viem/chains";
+import { arcTestnet } from "viem/chains";
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID || "5e727b99-00c4-4d64-83a6-95b0a29ff2a3";
-const BUNDLER_URL = `https://rpc.zerodev.app/api/v3/${PROJECT_ID}/chain/84532`;
+const BUNDLER_URL = `https://rpc.zerodev.app/api/v3/${PROJECT_ID}/chain/5042002`;
 const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${PROJECT_ID}`;
 
 export async function getKernelClient(params: {
@@ -20,7 +20,7 @@ export async function getKernelClient(params: {
 
     try {
         const publicClient = createPublicClient({
-            chain: baseSepolia as Chain,
+            chain: arcTestnet as Chain,
             transport: http(BUNDLER_URL),
         });
 
@@ -63,7 +63,7 @@ export async function getKernelClient(params: {
         // Создаем клиент для взаимодействия с аккаунтом
         const client = createKernelAccountClient({
             account,
-            chain: baseSepolia as Chain,
+            chain: arcTestnet as Chain,
             bundlerTransport: http(BUNDLER_URL),
             paymaster: {
                 getPaymasterData: async (userOperation) => {
