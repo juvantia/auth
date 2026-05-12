@@ -79,7 +79,10 @@ export async function getKernelClient(params: {
                         }),
                     });
                     const data = await res.json();
-                    if (data.error) throw new Error(data.error.message);
+                    if (!res.ok || data.error) {
+                        console.error("Paymaster Error Body:", data);
+                        throw new Error(data.error?.message || `Paymaster failed with status ${res.status}`);
+                    }
                     return data.result;
                 },
             },
