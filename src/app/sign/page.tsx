@@ -12,13 +12,17 @@ export default function SignPage() {
         fetch("/api/user/profile")
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.user) {
-                    setProfile(data.user);
+                // The API returns the user object directly, not wrapped in { success, user }
+                if (data && data.username) {
+                    setProfile(data);
                 } else {
                     setStatus("Please log in first.");
                 }
             })
-            .catch(e => setStatus("Error loading profile"));
+            .catch(e => {
+                console.error("Profile fetch error:", e);
+                setStatus("Error loading profile");
+            });
 
         const handleMessage = (event: MessageEvent) => {
             if (event.data?.type === "SIGN_TX") {
