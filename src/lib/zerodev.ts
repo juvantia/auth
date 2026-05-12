@@ -43,7 +43,6 @@ export async function getKernelClient(params: {
                 webAuthnKey,
                 entryPoint,
                 kernelVersion: KERNEL_V3_1,
-                validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2_UNPATCHED,
             });
         }
 
@@ -52,10 +51,14 @@ export async function getKernelClient(params: {
         }
 
         // Create Kernel Account (v3.1)
+        const chainId = await publicClient.getChainId();
+        console.log("Creating account for Chain ID:", chainId);
+
         const account = await createKernelAccount(publicClient, {
             plugins: {
                 sudo: validator,
             },
+            index: BigInt(0),
             entryPoint,
             kernelVersion: KERNEL_V3_1,
         });
