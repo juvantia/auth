@@ -63,6 +63,7 @@ export async function getKernelClient(params: {
             index: BigInt(0),
             entryPoint,
             kernelVersion: KERNEL_V3_0,
+            factoryAddress: "0x5de4839a76cf55d0c90e2061ef4386d962E15ae3",
         });
 
         console.log("Generated Smart Wallet Address:", account.address);
