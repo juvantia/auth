@@ -71,10 +71,7 @@ export async function getKernelClient(params: {
             account,
             chain: arcTestnet as Chain,
             bundlerTransport: http(BUNDLER_URL),
-            paymaster: {
-                getPaymasterData: async () => ({ paymasterAndData: "0x", preVerificationGas: BigInt(0), verificationGasLimit: BigInt(0), callGasLimit: BigInt(0) }),
-                getPaymasterStubData: async () => ({ paymasterAndData: "0x", preVerificationGas: BigInt(0), verificationGasLimit: BigInt(0), callGasLimit: BigInt(0) }),
-            } as any,
+            paymaster: paymasterClient,
         });
 
         return {
