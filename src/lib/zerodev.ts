@@ -43,7 +43,9 @@ export async function getKernelClient(params: {
                 webAuthnKey,
                 entryPoint,
                 kernelVersion: KERNEL_V3_1,
+                validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2_UNPATCHED,
             });
+            console.log("Validator Identifier:", (validator as any).getIdentifier?.() || "N/A");
         }
 
         if (!validator) {
