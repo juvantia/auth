@@ -4,7 +4,7 @@ import {
 } from "@zerodev/sdk";
 import { toPasskeyValidator, PasskeyValidatorContractVersion } from "@zerodev/passkey-validator";
 import { toWebAuthnKey, WebAuthnMode } from "@zerodev/webauthn-key";
-import { KERNEL_V2_4, getEntryPoint } from "@zerodev/sdk/constants";
+import { KERNEL_V3_0, getEntryPoint } from "@zerodev/sdk/constants";
 import { http, createPublicClient, type Chain } from "viem";
 import { arcTestnet } from "viem/chains";
 
@@ -42,10 +42,9 @@ export async function getKernelClient(params: {
             validator = await toPasskeyValidator(publicClient, {
                 webAuthnKey,
                 entryPoint,
-                kernelVersion: KERNEL_V2_4,
+                kernelVersion: KERNEL_V3_0,
                 validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2_UNPATCHED,
             });
-            console.log("Validator Identifier:", (validator as any).getIdentifier?.() || "N/A");
         }
 
         if (!validator) {
@@ -62,12 +61,12 @@ export async function getKernelClient(params: {
             },
             index: BigInt(0),
             entryPoint,
-            kernelVersion: KERNEL_V2_4,
+            kernelVersion: KERNEL_V3_0,
         });
 
         console.log("Generated Smart Wallet Address:", account.address);
         if (account.address === "0x0000000000000000000000000000000000000000") {
-            throw new Error(`Failed to generate a valid smart wallet address (got 0x0) for Chain ID: ${chainId} using Kernel v2.4. Check your network/validator config.`);
+            throw new Error(`Failed to generate a valid smart wallet address (got 0x0) for Chain ID: ${chainId} using Kernel v3.0 + EP 0.6. Check your network/validator config.`);
         }
 
         // Create client for account interaction
