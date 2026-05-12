@@ -60,6 +60,11 @@ export async function getKernelClient(params: {
             kernelVersion: KERNEL_V3_1,
         });
 
+        console.log("Generated Smart Wallet Address:", account.address);
+        if (account.address === "0x0000000000000000000000000000000000000000") {
+            throw new Error("Failed to generate a valid smart wallet address (got 0x0). Check your network/validator config.");
+        }
+
         // Create client for account interaction
         const { createZeroDevPaymasterClient } = await import('@zerodev/sdk');
         const paymasterClient = createZeroDevPaymasterClient({
