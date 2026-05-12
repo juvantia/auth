@@ -21,7 +21,7 @@ export async function getKernelClient(params: {
     try {
         const publicClient = createPublicClient({
             chain: arcTestnet as Chain,
-            transport: http(BUNDLER_URL),
+            transport: http("https://rpc.testnet.arc.network"),
         });
 
         const entryPoint = getEntryPoint("0.7");
