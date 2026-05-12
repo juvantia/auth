@@ -91,6 +91,6 @@ export async function getKernelClient(params: {
 
     } catch (err: any) {
         console.error("ZeroDev Client Init Failed:", err);
-        return null;
+        throw err;
     }
 }
