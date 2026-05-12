@@ -71,7 +71,7 @@ export async function getKernelClient(params: {
             account,
             chain: arcTestnet as Chain,
             bundlerTransport: http(BUNDLER_URL),
-            paymaster: paymasterClient,
+            // paymaster: paymasterClient, // Disabled temporarily to bypass 403 error
         });
 
         return {
