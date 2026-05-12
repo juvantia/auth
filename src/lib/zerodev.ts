@@ -24,7 +24,7 @@ export async function getKernelClient(params: {
             transport: http("https://rpc.testnet.arc.network"), // Force refresh
         });
 
-        const entryPoint = getEntryPoint("0.6");
+        const entryPoint = getEntryPoint("0.7");
         let validator: any;
         let webAuthnKey: any;
 
@@ -44,6 +44,7 @@ export async function getKernelClient(params: {
                 entryPoint,
                 kernelVersion: KERNEL_V3_1 as any,
                 validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2_UNPATCHED,
+                validatorAddress: "0xD990393C670d9FC593811192a543796252d00ac1",
             });
         }
 
@@ -62,11 +63,12 @@ export async function getKernelClient(params: {
             index: BigInt(0),
             entryPoint,
             kernelVersion: KERNEL_V3_1 as any,
+            factoryAddress: "0x5de4839a76cf55d0c90e2061ef4386d962E15ae3",
         });
 
         console.log("Generated Smart Wallet Address:", account.address);
         if (account.address === "0x0000000000000000000000000000000000000000") {
-            throw new Error(`Failed to generate a valid smart wallet address (got 0x0) for Chain ID: ${chainId} using Kernel v3.1 + EP 0.6. Check your network/validator config.`);
+            throw new Error(`Failed to generate a valid smart wallet address (got 0x0) for Chain ID: ${chainId} using Kernel v3.1 + EP 0.7 with explicit addresses. Check your network/validator config.`);
         }
 
         // Create client for account interaction
