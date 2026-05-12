@@ -306,26 +306,6 @@ function Dashboard() {
                 </span>
               </div>
             </div>
-            
-            {profile?.smart_wallet_address && (
-            <div className="neon-card flex flex-col gap-3">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-1 h-4 bg-primary/60 rounded-full" />
-                <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
-                  Secure Wallet
-                </h3>
-              </div>
-              <div className="flex items-center justify-between bg-surface-container border border-border/10 px-4 py-3 rounded-sm">
-                <div>
-                  <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40 mb-0.5">Linked Address</p>
-                  <p className="font-inter text-[13px] text-text-primary">{profile.smart_wallet_address.substring(0, 6)}...{profile.smart_wallet_address.substring(38)}</p>
-                </div>
-                <span className="font-grotesk text-[8px] uppercase tracking-widest text-primary border border-primary/20 bg-primary/5 px-2 py-0.5">
-                  Active
-                </span>
-              </div>
-            </div>
-            )}
           </div>
         )}
       </div>
