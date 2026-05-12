@@ -61,34 +61,17 @@ export async function getKernelClient(params: {
         });
 
         // Create client for account interaction
+        const { createZeroDevPaymasterClient } = await import('@zerodev/sdk');
+        const paymasterClient = createZeroDevPaymasterClient({
+            chain: arcTestnet as Chain,
+            transport: http(PAYMASTER_URL),
+        });
+
         const client = createKernelAccountClient({
             account,
             chain: arcTestnet as Chain,
             bundlerTransport: http(BUNDLER_URL),
-            paymaster: {
-                getPaymasterData: async (userOperation) => {
-                    const { stringify } = await import('viem');
-                    const res = await fetch(PAYMASTER_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: stringify({
-                            jsonrpc: "2.0",
-                            id: 1,
-                            method: "zd_sponsorUserOperation",
-                            params: [{
-                                userOp: userOperation,
-                                entryPoint: entryPoint
-                            }],
-                        }),
-                    });
-                    const data = await res.json();
-                    if (!res.ok || data.error) {
-                        console.error("Paymaster Error Body:", data);
-                        throw new Error(data.error?.message || `Paymaster failed with status ${res.status}`);
-                    }
-                    return data.result;
-                },
-            },
+            paymaster: paymasterClient,
         });
 
         return {
