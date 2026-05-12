@@ -55,7 +55,7 @@ export default function SignPage() {
 
             const txHash = await kernel.client.sendTransaction({
                 to: txData.to,
-                value: txData.value ? BigInt(txData.value) : 0n,
+                value: txData.value ? BigInt(txData.value) : BigInt(0),
                 data: data || "0x",
             });
 
