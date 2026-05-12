@@ -75,7 +75,10 @@ export async function getKernelClient(params: {
                             jsonrpc: "2.0",
                             id: 1,
                             method: "zd_sponsorUserOperation",
-                            params: [userOperation, entryPoint],
+                            params: [{
+                                userOp: userOperation,
+                                entryPoint: entryPoint
+                            }],
                         }),
                     });
                     const data = await res.json();
