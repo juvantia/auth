@@ -67,10 +67,11 @@ export async function getKernelClient(params: {
             bundlerTransport: http(BUNDLER_URL),
             paymaster: {
                 getPaymasterData: async (userOperation) => {
+                    const { stringify } = await import('viem');
                     const res = await fetch(PAYMASTER_URL, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
+                        body: stringify({
                             jsonrpc: "2.0",
                             id: 1,
                             method: "zd_sponsorUserOperation",
