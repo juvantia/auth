@@ -167,6 +167,13 @@ function Dashboard() {
         setTimeout(() => {
           window.close();
         }, 2000);
+      } else {
+        const authRedirect = urlParams.get('auth_redirect');
+        if (authRedirect) {
+          setTimeout(() => {
+            window.location.href = decodeURIComponent(authRedirect);
+          }, 1500);
+        }
       }
     }
   }, [profile, needsOnboarding]);
@@ -174,11 +181,13 @@ function Dashboard() {
   if (session.loading || isLoading) return <LoadingScreen />;
 
   const isPopup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('popup') === 'true';
+  const hasAuthRedirect = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auth_redirect') !== null;
+  const isRedirecting = isPopup || hasAuthRedirect;
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
       <div className="w-full max-w-sm flex flex-col gap-5">
-        {isPopup && profile && !needsOnboarding && (
+        {isRedirecting && profile && !needsOnboarding && (
           <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 animate-in fade-in duration-500">
             <div className="w-16 h-16 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(0,255,136,0.15)]">
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#00FF88" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -187,7 +196,7 @@ function Dashboard() {
             </div>
             <h2 className="font-cinzel text-xl uppercase tracking-widest text-primary mb-2">Access Granted</h2>
             <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-text-secondary/60">
-              Synchronizing with Services...
+              {hasAuthRedirect ? "Redirecting to Application..." : "Synchronizing with Services..."}
             </p>
           </div>
         )}
