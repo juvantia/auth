@@ -78,6 +78,7 @@ function Dashboard() {
     if (e) e.preventDefault();
     if (isSubmitting) return;
     if (!name || !username) { setError('Please fill in all required fields.'); return; }
+    if (username.length < 5) { setError('Username must be at least 5 characters long.'); return; }
 
     setIsSubmitting(true);
     setError('');

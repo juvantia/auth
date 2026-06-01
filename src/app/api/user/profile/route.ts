@@ -117,6 +117,15 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
             }
 
+            if (username.length < 5 || username.length > 50) {
+                return NextResponse.json({ message: "Username must be between 5 and 50 characters long" }, { status: 400 });
+            }
+
+            const allowedUsernameRegex = /^[a-zA-Z0-9_@.:+-]+$/;
+            if (!allowedUsernameRegex.test(username)) {
+                return NextResponse.json({ message: "Username contains invalid characters" }, { status: 400 });
+            }
+
             // Get the current email from SuperTokens
             const userInfo = await supertokens.getUser(session.getUserId());
             const email = userInfo?.emails[0];
