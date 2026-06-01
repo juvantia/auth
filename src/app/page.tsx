@@ -41,6 +41,8 @@ function Dashboard() {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
 
   useEffect(() => {
     async function fetchProfile() {
@@ -137,6 +139,29 @@ function Dashboard() {
       img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleUpdateName = async () => {
+    if (!profile || !newName.trim()) return;
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          name: newName, 
+          username: profile.username, 
+          avatar_url: profile.avatar_url 
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProfile(updated);
+        setIsEditingName(false);
+      }
+    } catch (err) {
+      console.error("Name update failed", err);
+    }
   };
 
   const handleUpdateAvatar = async (newUrl: string) => {
@@ -288,11 +313,51 @@ function Dashboard() {
                     : <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile?.name?.charAt(0).toUpperCase()}</span>
                   }
                 </div>
+                <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-surface-high border border-border/30 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 transition-all group shadow-lg">
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  +
+                </label>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <h2 className="text-xl font-semibold uppercase tracking-widest text-[#E6F0EB]" style={{ fontFamily: 'var(--font-cinzel)' }}>
-                  {profile?.name}
-                </h2>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      maxLength={32}
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="neon-input py-1 px-2 text-sm w-40 text-center"
+                      placeholder="NAME"
+                    />
+                    <button
+                      onClick={handleUpdateName}
+                      className="px-2.5 py-1.5 border border-primary/40 hover:border-primary bg-primary/10 text-primary text-[10px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setIsEditingName(false)}
+                      className="px-2.5 py-1.5 border border-error/40 hover:border-error bg-error/10 text-error text-[10px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-semibold uppercase tracking-widest text-[#E6F0EB]" style={{ fontFamily: 'var(--font-cinzel)' }}>
+                      {profile?.name}
+                    </h2>
+                    <button
+                      onClick={() => {
+                        setNewName(profile?.name || '');
+                        setIsEditingName(true);
+                      }}
+                      className="text-[9px] text-secondary/60 hover:text-secondary font-grotesk font-bold uppercase tracking-widest border border-secondary/20 hover:border-secondary/50 px-2 py-0.5"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                )}
                 <p className="font-grotesk text-[13px] font-medium tracking-wider text-secondary">
                   @{profile?.username}
                 </p>
