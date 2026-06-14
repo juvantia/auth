@@ -22,7 +22,7 @@ export const User = {
       return res.rows.length > 0 ? res.rows[0] : null;
     }
     if (criteria.username) {
-      const res = await query('SELECT * FROM users WHERE username = $1', [criteria.username]);
+      const res = await query('SELECT * FROM users WHERE username = $1', [criteria.username.toLowerCase()]);
       return res.rows.length > 0 ? res.rows[0] : null;
     }
     return null;
@@ -47,7 +47,7 @@ export const User = {
              filter.supertokens_id,
              update.email || '',
              update.name || '',
-             update.username || (update.email ? update.email.split('@')[0] : null),
+             update.username?.toLowerCase() || (update.email ? update.email.split('@')[0].toLowerCase() : null),
              update.avatar_url || null,
              update.smart_wallet_address || null,
              JSON.stringify(update.passkeys || [])
@@ -61,7 +61,7 @@ export const User = {
     // UPDATE
     const name = update.name !== undefined ? update.name : existing.name;
     const email = update.email !== undefined ? update.email : existing.email;
-    const username = update.username !== undefined ? update.username : existing.username;
+    const username = update.username !== undefined ? update.username.toLowerCase() : existing.username;
     const avatar_url = update.avatar_url !== undefined ? update.avatar_url : existing.avatar_url;
     const smart_wallet_address = update.smart_wallet_address !== undefined ? update.smart_wallet_address : existing.smart_wallet_address;
     const passkeys = update.passkeys !== undefined ? JSON.stringify(update.passkeys) : JSON.stringify(existing.passkeys);

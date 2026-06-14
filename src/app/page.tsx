@@ -280,7 +280,8 @@ function Dashboard() {
                     type="text" required maxLength={16} value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))}
                     className="neon-input pl-9"
-                    placeholder="USERNAME"
+                    style={{ textTransform: 'lowercase' }}
+                    placeholder="username"
                   />
                 </div>
               </div>

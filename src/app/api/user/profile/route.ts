@@ -134,7 +134,8 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ message: "Could not retrieve email from session" }, { status: 400 });
             }
 
-            const existingUser = await User.findOne({ username });
+            const lowerUsername = username.toLowerCase();
+            const existingUser = await User.findOne({ username: lowerUsername });
             if (existingUser && existingUser.supertokens_id !== session.getUserId()) {
                 return NextResponse.json({ message: "Username already taken" }, { status: 400 });
             }
@@ -143,7 +144,7 @@ export async function POST(request: NextRequest) {
             const updateObj: Partial<IUser> = { 
                 email: email || '', 
                 name, 
-                username, 
+                username: lowerUsername, 
             };
             if (smart_wallet_address) updateObj.smart_wallet_address = smart_wallet_address;
             if (avatar_url) updateObj.avatar_url = avatar_url;
