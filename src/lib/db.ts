@@ -22,6 +22,8 @@ export async function initDb() {
         avatar_url TEXT,
         smart_wallet_address VARCHAR(255) UNIQUE,
         passkeys JSONB DEFAULT '[]'::jsonb,
+        status VARCHAR(50) DEFAULT 'citizen',
+        status_description TEXT DEFAULT 'Citizen of Juvantia Technopark.',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
