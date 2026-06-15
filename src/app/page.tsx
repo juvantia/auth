@@ -13,6 +13,7 @@ interface UserProfile {
   email?: string;
   avatar_url?: string;
   smart_wallet_address?: string;
+  status_description?: string;
 }
 
 // ─── Loading Screen ───────────────────────────────────────────────────────────
@@ -43,6 +44,8 @@ function Dashboard() {
   const [error, setError] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [newDesc, setNewDesc] = useState('');
 
   useEffect(() => {
     async function fetchProfile() {
@@ -183,6 +186,30 @@ function Dashboard() {
       }
     } catch (err) {
       console.error("Avatar update failed", err);
+    }
+  };
+
+  const handleUpdateDesc = async () => {
+    if (!profile) return;
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ 
+          name: profile.name, 
+          username: profile.username, 
+          avatar_url: profile.avatar_url,
+          status_description: newDesc
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProfile(updated);
+        setIsEditingDesc(false);
+      }
+    } catch (err) {
+      console.error("Description update failed", err);
     }
   };
 
@@ -363,6 +390,60 @@ function Dashboard() {
                   @{profile?.username}
                 </p>
               </div>
+            </div>
+ 
+            <div className="neon-card flex flex-col gap-3">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-4 bg-secondary/60 rounded-full" />
+                  <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
+                    Status Description
+                  </h3>
+                </div>
+                {isEditingDesc ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleUpdateDesc}
+                      className="px-2 py-0.5 border border-primary/40 hover:border-primary bg-primary/10 text-primary text-[8px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={() => setIsEditingDesc(false)}
+                      className="px-2 py-0.5 border border-error/40 hover:border-error bg-error/10 text-error text-[8px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setNewDesc(profile?.status_description || '');
+                      setIsEditingDesc(true);
+                    }}
+                    className="text-[9px] text-secondary/60 hover:text-secondary font-grotesk font-bold uppercase tracking-widest border border-secondary/20 hover:border-secondary/50 px-2 py-0.5"
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              {isEditingDesc ? (
+                <textarea
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  maxLength={250}
+                  rows={3}
+                  className="neon-input text-xs w-full py-2 px-3 resize-none bg-surface-lowest border border-border/20 text-text-primary rounded-sm"
+                  placeholder="Tell us about your contribution to Juvantia..."
+                />
+              ) : (
+                <div className="bg-surface-container border border-border/10 px-4 py-3 rounded-sm">
+                  <p className="font-inter text-[12px] text-text-primary leading-relaxed whitespace-pre-wrap">
+                    {profile?.status_description || 'No status description provided.'}
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="neon-card flex flex-col gap-3">

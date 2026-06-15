@@ -59,7 +59,8 @@ async function getProfileByUserId(supertokens_id: string) {
             email: user.email || email,
             avatar_url: user.avatar_url,
             smart_wallet_address: user.smart_wallet_address,
-            passkeys: user.passkeys || []
+            passkeys: user.passkeys || [],
+            status_description: user.status_description || 'Citizen of Juvantia Technopark.'
         }, { status: 200 });
     } catch (error: any) {
         console.error("Helper error:", error);
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            const { name, username, avatar_url, smart_wallet_address, passkey } = await request.json();
+            const { name, username, avatar_url, smart_wallet_address, passkey, status_description } = await request.json();
 
             if (!name || !username) {
                 return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
@@ -148,6 +149,7 @@ export async function POST(request: NextRequest) {
             };
             if (smart_wallet_address) updateObj.smart_wallet_address = smart_wallet_address;
             if (avatar_url) updateObj.avatar_url = avatar_url;
+            if (status_description !== undefined) updateObj.status_description = status_description;
 
             // Handle passkeys: get existing and add new
             const user = await User.findOne({ supertokens_id: session.getUserId() });

@@ -8,6 +8,7 @@ export interface IUser {
   avatar_url?: string;
   smart_wallet_address?: string;
   passkeys: string[];
+  status_description?: string;
   created_at?: Date;
   updated_at?: Date;
 }
@@ -65,11 +66,12 @@ export const User = {
     const avatar_url = update.avatar_url !== undefined ? update.avatar_url : existing.avatar_url;
     const smart_wallet_address = update.smart_wallet_address !== undefined ? update.smart_wallet_address : existing.smart_wallet_address;
     const passkeys = update.passkeys !== undefined ? JSON.stringify(update.passkeys) : JSON.stringify(existing.passkeys);
+    const status_description = update.status_description !== undefined ? update.status_description : (existing as any).status_description;
 
     const res = await query(
-      `UPDATE users SET name = $1, email = $2, username = $3, avatar_url = $4, smart_wallet_address = $5, passkeys = $6, updated_at = NOW()
-       WHERE supertokens_id = $7 RETURNING *`,
-      [name, email, username, avatar_url, smart_wallet_address, passkeys, filter.supertokens_id]
+      `UPDATE users SET name = $1, email = $2, username = $3, avatar_url = $4, smart_wallet_address = $5, passkeys = $6, status_description = $7, updated_at = NOW()
+       WHERE supertokens_id = $8 RETURNING *`,
+      [name, email, username, avatar_url, smart_wallet_address, passkeys, status_description, filter.supertokens_id]
     );
     return res.rows[0];
   }
