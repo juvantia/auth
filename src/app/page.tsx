@@ -251,9 +251,12 @@ function Dashboard() {
 
   if (session.loading || isLoading) return <LoadingScreen />;
 
-  const isPopup = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('popup') === 'true';
-  const hasAuthRedirect = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('auth_redirect') !== null;
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPopup = urlParams?.get('popup') === 'true';
+  const hasAuthRedirect = urlParams?.get('auth_redirect') !== null;
   const isRedirecting = isPopup || hasAuthRedirect;
+  const authRedirectValue = urlParams?.get('auth_redirect') || '';
+  const isDeepLink = authRedirectValue.startsWith('juvantia-cockpit://');
 
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
@@ -266,9 +269,31 @@ function Dashboard() {
               </svg>
             </div>
             <h2 className="font-cinzel text-xl uppercase tracking-widest text-primary mb-2">Access Granted</h2>
-            <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-text-secondary/60">
+            <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-text-secondary/60 mb-6">
               {hasAuthRedirect ? "Redirecting to Application..." : "Synchronizing with Services..."}
             </p>
+            {hasAuthRedirect && isDeepLink && (
+              <div className="flex flex-col items-center gap-4 mt-2">
+                <a
+                  href={
+                    (() => {
+                      const decoded = decodeURIComponent(authRedirectValue);
+                      const separator = decoded.includes('?') ? '&' : '?';
+                      return jwt ? `${decoded}${separator}token=${jwt}` : '#';
+                    })()
+                  }
+                  onClick={(e) => {
+                    if (!jwt) e.preventDefault();
+                  }}
+                  className={`neon-btn-primary px-8 py-3.5 rounded-sm text-[11px] uppercase tracking-widest no-underline shadow-[0_0_20px_rgba(0,255,136,0.25)] hover:shadow-[0_0_30px_rgba(0,255,136,0.5)] transition-all ${!jwt ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {jwt ? "Open Juvantia Cockpit" : "Generating Session..."}
+                </a>
+                <p className="font-grotesk text-[9px] uppercase tracking-wider text-text-secondary/40 max-w-[240px] leading-relaxed">
+                  If the application did not open automatically, click the button above to launch it manually.
+                </p>
+              </div>
+            )}
           </div>
         )}
         <header className="flex items-center justify-between mb-2">
