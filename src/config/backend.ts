@@ -92,7 +92,7 @@ export const backendConfig = (): TypeInput => {
             Session.init({
                 cookieDomain: ".juvantia.org",
                 cookieSameSite: "lax",
-                getTokenTransferMethod: () => "cookie",
+                getTokenTransferMethod: () => "any",
                 antiCsrf: "NONE",
                 exposeAccessTokenToFrontendInCookieBasedAuth: true,
                 override: {
