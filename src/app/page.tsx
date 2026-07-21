@@ -223,13 +223,31 @@ function Dashboard() {
       } else {
         const authRedirect = urlParams.get('auth_redirect');
         if (authRedirect) {
-          setTimeout(() => {
-            window.location.href = decodeURIComponent(authRedirect);
-          }, 1500);
+          const decodedUrl = decodeURIComponent(authRedirect);
+          if (decodedUrl.startsWith('juvantia-cockpit://')) {
+            // Wait for JWT token to be retrieved before redirecting to the desktop app
+            if (!jwt) return;
+            
+            setTimeout(() => {
+              try {
+                const redirectUrl = new URL(decodedUrl);
+                redirectUrl.searchParams.set('token', jwt);
+                window.location.href = redirectUrl.toString();
+              } catch (e) {
+                console.error("URL parsing failed for redirect, using string fallback:", e);
+                const separator = decodedUrl.includes('?') ? '&' : '?';
+                window.location.href = `${decodedUrl}${separator}token=${jwt}`;
+              }
+            }, 1500);
+          } else {
+            setTimeout(() => {
+              window.location.href = decodedUrl;
+            }, 1500);
+          }
         }
       }
     }
-  }, [profile, needsOnboarding]);
+  }, [profile, needsOnboarding, jwt]);
 
   if (session.loading || isLoading) return <LoadingScreen />;
 
