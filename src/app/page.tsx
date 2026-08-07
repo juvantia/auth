@@ -548,7 +548,7 @@ function Dashboard() {
                   disabled
                   className="font-grotesk text-[8px] uppercase tracking-widest text-text-secondary/40 border border-border/20 bg-surface-lowest/50 px-2.5 py-1 rounded-sm opacity-60 cursor-not-allowed select-none"
                 >
-                  Inactive
+                  Change
                 </button>
               </div>
             </div>
