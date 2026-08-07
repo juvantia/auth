@@ -418,24 +418,24 @@ function Dashboard() {
               </div>
               <div className="flex flex-col items-center gap-1">
                 {isEditingName ? (
-                  <div className="flex items-center gap-2 mt-1">
+                  <div className="flex items-center gap-1.5 mt-1">
                     <input
                       type="text"
                       maxLength={32}
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      className="neon-input py-1 px-2 text-sm w-40 text-center"
+                      className="w-40 bg-surface-lowest/90 border border-secondary/40 focus:border-secondary focus:ring-1 focus:ring-secondary/30 rounded-sm py-1 px-2 text-sm text-center text-text-primary font-cinzel font-semibold uppercase tracking-wider outline-none transition-all"
                       placeholder="NAME"
                     />
                     <button
                       onClick={handleUpdateName}
-                      className="px-2.5 py-1.5 border border-primary/40 hover:border-primary bg-primary/10 text-primary text-[10px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                      className="px-2.5 py-1 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
                     >
                       Save
                     </button>
                     <button
                       onClick={() => setIsEditingName(false)}
-                      className="px-2.5 py-1.5 border border-error/40 hover:border-error bg-error/10 text-error text-[10px] font-grotesk font-bold uppercase tracking-wider transition-all"
+                      className="px-2.5 py-1 border border-error/50 hover:border-error bg-error/10 hover:bg-error/20 text-error text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
                     >
                       Cancel
                     </button>
@@ -450,7 +450,7 @@ function Dashboard() {
                         setNewName(profile?.name || '');
                         setIsEditingName(true);
                       }}
-                      className="text-[9px] text-secondary/60 hover:text-secondary font-grotesk font-bold uppercase tracking-widest border border-secondary/20 hover:border-secondary/50 px-2 py-0.5"
+                      className="text-[9px] text-secondary/70 hover:text-secondary font-grotesk font-bold uppercase tracking-widest border border-secondary/30 hover:border-secondary/60 bg-secondary/5 px-2.5 py-1 rounded-sm transition-all"
                     >
                       Edit
                     </button>
@@ -544,9 +544,12 @@ function Dashboard() {
                   <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40 mb-0.5">Email</p>
                   <p className="font-inter text-[13px] text-text-primary">{profile?.email}</p>
                 </div>
-                <span className="font-grotesk text-[8px] uppercase tracking-widest text-secondary border border-secondary/20 bg-secondary/5 px-2 py-0.5">
-                  Active
-                </span>
+                <button
+                  disabled
+                  className="font-grotesk text-[8px] uppercase tracking-widest text-text-secondary/40 border border-border/20 bg-surface-lowest/50 px-2.5 py-1 rounded-sm opacity-60 cursor-not-allowed select-none"
+                >
+                  Inactive
+                </button>
               </div>
             </div>
           </div>
