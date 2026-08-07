@@ -22,7 +22,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Juvantia Auth",
+  title: "Auth | JUVANTIA",
   description: "Secure Identity & Account Center for the Juvantia Ecosystem",
   icons: {
     icon: "/favicon_io/favicon.ico",
