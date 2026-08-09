@@ -1,80 +1,81 @@
-import { query } from "../lib/db";
+import { query } from "@/lib/db";
+import type { ProfileMutation } from "@/contracts/profile";
 
 export interface IUser {
-  supertokens_id: string;
-  email: string;
-  name: string;
-  username: string;
-  avatar_url?: string;
-  smart_wallet_address?: string;
-  passkeys: string[];
-  status_description?: string;
-  created_at?: Date;
-  updated_at?: Date;
+    supertokens_id: string;
+    email: string;
+    name: string;
+    username: string | null;
+    avatar_url: string | null;
+    readonly smart_wallet_address: string | null;
+    readonly passkeys: unknown[];
+    status_description: string | null;
+    created_at?: Date;
+    updated_at?: Date;
 }
 
+export type ProfileUpdate = ProfileMutation & { email: string };
+
 export const User = {
-  /**
-   * findOne based on supertokens_id
-   */
-  findOne: async (criteria: { supertokens_id?: string; username?: string }): Promise<IUser | null> => {
-    if (criteria.supertokens_id) {
-      const res = await query('SELECT * FROM users WHERE supertokens_id = $1', [criteria.supertokens_id]);
-      return res.rows.length > 0 ? res.rows[0] : null;
-    }
-    if (criteria.username) {
-      const res = await query('SELECT * FROM users WHERE username = $1', [criteria.username.toLowerCase()]);
-      return res.rows.length > 0 ? res.rows[0] : null;
-    }
-    return null;
-  },
+    findOne: async (criteria: { supertokens_id?: string; username?: string }): Promise<IUser | null> => {
+        if (criteria.supertokens_id) {
+            const result = await query<IUser>("SELECT * FROM users WHERE supertokens_id = $1", [
+                criteria.supertokens_id,
+            ]);
+            return result.rows[0] ?? null;
+        }
+        if (criteria.username) {
+            const result = await query<IUser>("SELECT * FROM users WHERE username = $1", [
+                criteria.username.toLowerCase(),
+            ]);
+            return result.rows[0] ?? null;
+        }
+        return null;
+    },
 
-  /**
-   * findOneAndUpdate or Create (UPSERT)
-   */
-  findOneAndUpdate: async (
-    filter: { supertokens_id: string },
-    update: Partial<IUser>,
-    options: { upsert?: boolean; new?: boolean } = {}
-  ): Promise<IUser | null> => {
-    const existing = await User.findOne({ supertokens_id: filter.supertokens_id });
-    
-    if (!existing) {
-      if (options.upsert) {
-         const res = await query(
-           `INSERT INTO users (supertokens_id, email, name, username, avatar_url, smart_wallet_address, passkeys)
-            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-           [
-             filter.supertokens_id,
-             update.email || '',
-             update.name || '',
-             update.username?.toLowerCase() || (update.email ? update.email.split('@')[0].toLowerCase() : null),
-             update.avatar_url || null,
-             update.smart_wallet_address || null,
-             JSON.stringify(update.passkeys || [])
-           ]
-         );
-         return res.rows[0];
-      }
-      return null;
-    }
+    upsertProfile: async (userId: string, update: ProfileUpdate): Promise<IUser> => {
+        const existing = await User.findOne({ supertokens_id: userId });
+        if (!existing) {
+            const result = await query<IUser>(
+                `INSERT INTO users
+                    (supertokens_id, email, name, username, avatar_url, status_description)
+                 VALUES ($1, $2, $3, $4, $5, $6)
+                 RETURNING *`,
+                [
+                    userId,
+                    update.email,
+                    update.name,
+                    update.username,
+                    update.avatar_url ?? null,
+                    update.status_description ?? "Citizen of Juvantia Technopark.",
+                ],
+            );
+            return result.rows[0];
+        }
 
-    // UPDATE
-    const name = update.name !== undefined ? update.name : existing.name;
-    const email = update.email !== undefined ? update.email : existing.email;
-    const username = update.username !== undefined ? update.username.toLowerCase() : existing.username;
-    const avatar_url = update.avatar_url !== undefined ? update.avatar_url : existing.avatar_url;
-    const smart_wallet_address = update.smart_wallet_address !== undefined ? update.smart_wallet_address : existing.smart_wallet_address;
-    const passkeys = update.passkeys !== undefined ? JSON.stringify(update.passkeys) : JSON.stringify(existing.passkeys);
-    const status_description = update.status_description !== undefined ? update.status_description : (existing as any).status_description;
-
-    const res = await query(
-      `UPDATE users SET name = $1, email = $2, username = $3, avatar_url = $4, smart_wallet_address = $5, passkeys = $6, status_description = $7, updated_at = NOW()
-       WHERE supertokens_id = $8 RETURNING *`,
-      [name, email, username, avatar_url, smart_wallet_address, passkeys, status_description, filter.supertokens_id]
-    );
-    return res.rows[0];
-  }
+        const result = await query<IUser>(
+            `UPDATE users
+             SET email = $2,
+                 name = $3,
+                 username = $4,
+                 avatar_url = $5,
+                 status_description = $6,
+                 updated_at = NOW()
+             WHERE supertokens_id = $1
+             RETURNING *`,
+            [
+                userId,
+                update.email,
+                update.name,
+                update.username,
+                update.avatar_url !== undefined ? update.avatar_url : existing.avatar_url,
+                update.status_description !== undefined
+                    ? update.status_description
+                    : existing.status_description,
+            ],
+        );
+        return result.rows[0];
+    },
 };
 
 export default User;

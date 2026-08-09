@@ -29,7 +29,6 @@ export const backendConfig = (): TypeInput => {
                         return {
                             ...originalImplementation,
                             sendEmail: async (input) => {
-                                console.log("OTP Code locally:", input.userInputCode);
 
                                 const nodemailer = require("nodemailer");
 

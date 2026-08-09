@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   auth:
-    image: ghcr.io/juvantia/auth:latest
+    build: .
     container_name: auth-service
     restart: always
     env_file:

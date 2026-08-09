@@ -6,15 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.20.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
-    "next": "16.1.7",
-    "nodemailer": "^8.0.2",
+    "next": "^16.3.0",
+    "nodemailer": "^9.0.5",
     "pg": "^8.20.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -22,7 +24,9 @@
     "supertokens-auth-react": "^0.51.2",
     "supertokens-node": "^24.0.1",
     "supertokens-web-js": "^0.16.0",
-    "uuid": "^14.0.0"
+    "uuid": "^14.0.0",
+    "viem": "^2.55.11",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -32,8 +36,12 @@
     "@types/react-dom": "^19",
     "@types/uuid": "^10.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.1.7",
+    "eslint-config-next": "^16.3.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
+  },
+  "overrides": {
+    "nodemailer": "$nodemailer"
   }
 }

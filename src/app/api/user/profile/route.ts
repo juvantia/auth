@@ -1,175 +1,132 @@
 export const dynamic = "force-dynamic";
-import { NextRequest, NextResponse } from "next/server";
-import supertokens from "supertokens-node";
-import { backendConfig } from "@/config/backend";
-import { query } from "@/lib/db";
-import { User, IUser } from "@/models/User";
-import { withSession } from "supertokens-node/nextjs";
+export const runtime = "nodejs";
 
-try {
-    supertokens.init(backendConfig());
-} catch (e: any) {
-    if (!e.message?.includes("already been called")) throw e;
+import { type NextRequest, NextResponse } from "next/server";
+import supertokens from "supertokens-node";
+import { withSession } from "supertokens-node/nextjs";
+import { z } from "zod";
+import { ProfileMutationSchema, buildPublicProfileResponse } from "@/contracts/profile";
+import { errorResponse, requestIdFor } from "@/lib/http/api-response";
+import { parseJsonBody, RequestValidationError } from "@/lib/http/request-validation";
+import { query } from "@/lib/db";
+import { ensureSuperTokensInitialized } from "@/lib/supertokens-server";
+import { User } from "@/models/User";
+
+ensureSuperTokensInitialized();
+
+interface ProfileRow extends Record<string, unknown> {
+    email: string;
+    name: string;
+    username: string | null;
+    avatar_url: string | null;
+    smart_wallet_address: string | null;
+    status_description: string | null;
 }
 
-async function getProfileByUserId(supertokens_id: string) {
+function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 = 200) {
+    return NextResponse.json(data, { status, headers: { "x-request-id": requestId } });
+}
+
+async function getProfileByUserId(userId: string, requestId: string) {
     try {
-        console.log(`[Profile Helper] Fetching data for ${supertokens_id}`);
-        
-        // 1. Get profile from PostgreSQL
-        const result = await query("SELECT * FROM users WHERE supertokens_id = $1", [supertokens_id]);
+        const result = await query<ProfileRow>(
+            `SELECT email, name, username, avatar_url, smart_wallet_address, status_description
+             FROM users WHERE supertokens_id = $1`,
+            [userId],
+        );
         let user = result.rows[0];
-        
-        // 2. Get info from SuperTokens
-        const userInfo = await supertokens.getUser(supertokens_id);
-        const email = userInfo?.emails[0];
-        
-        // 3. Self-healing: If not in PG but in ST, creating basic record
-        if (!user && email) {
-            console.log(`[Profile Helper] User ${supertokens_id} not found in PG. Auto-creating record...`);
-            const insertResult = await query(
-                "INSERT INTO users (supertokens_id, email, name) VALUES ($1, $2, $3) RETURNING *",
-                [supertokens_id, email, email.split('@')[0]]
+        const userInfo = await supertokens.getUser(userId);
+        const sessionEmail = userInfo?.emails[0];
+
+        if (!user && sessionEmail) {
+            const insertResult = await query<ProfileRow>(
+                `INSERT INTO users (supertokens_id, email, name)
+                 VALUES ($1, $2, $3)
+                 RETURNING email, name, username, avatar_url, smart_wallet_address, status_description`,
+                [userId, sessionEmail, sessionEmail.split("@")[0]],
             );
             user = insertResult.rows[0];
         }
-
         if (!user) {
-            return NextResponse.json({ message: "User profile not found" }, { status: 404 });
+            return errorResponse(requestId, 404, "PROFILE_NOT_FOUND", "The citizen profile was not found.");
         }
 
-        // 4. Checking onboarding status
-        if (!user.name || !user.username || !user.smart_wallet_address) {
-            return NextResponse.json({ 
-                needsOnboarding: true, 
-                email,
-                user: {
-                    name: user.name,
-                    username: user.username,
-                    avatar_url: user.avatar_url,
-                    smart_wallet_address: user.smart_wallet_address
-                }
-            }, { status: 200 });
-        }
-
-        return NextResponse.json({
-            supertokens_id: user.supertokens_id,
-            name: user.name,
-            username: user.username,
-            email: user.email || email,
-            avatar_url: user.avatar_url,
-            smart_wallet_address: user.smart_wallet_address,
-            passkeys: user.passkeys || [],
-            status_description: user.status_description || 'Citizen of Juvantia Technopark.'
-        }, { status: 200 });
-    } catch (error: any) {
-        console.error("Helper error:", error);
-        return NextResponse.json({ message: error.message }, { status: 500 });
+        return rawProfileResponse(requestId, buildPublicProfileResponse(user, sessionEmail));
+    } catch {
+        return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
 }
 
+function profileMutationError(requestId: string, error: unknown) {
+    if (error instanceof RequestValidationError) {
+        return errorResponse(requestId, 400, "INVALID_REQUEST", error.message, error.fields);
+    }
+    if (error instanceof z.ZodError) {
+        return errorResponse(requestId, 502, "PROFILE_CONTRACT_MISMATCH", "The profile response is invalid.");
+    }
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+        return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
+    }
+    return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not update the profile.");
+}
+
 export async function GET(request: NextRequest) {
-    console.log("--- /api/user/profile GET ---");
-
+    const requestId = requestIdFor(request);
     try {
-        // 0. Check for Internal Service-to-Service Secret (Bypasses Session/Cookies)
-        const internalKey = request.headers.get("x-internal-auth");
-        const forcedUserId = request.headers.get("x-user-id");
-        
-        if (internalKey === 'true' && forcedUserId) {
-            return await getProfileByUserId(forcedUserId);
-        }
-
-        return await withSession(request, async (err, session) => {
-            if (err) {
-                return new NextResponse(JSON.stringify({ message: "Unauthorized (session error)" }), {
-                    status: 401,
-                    headers: { "Content-Type": "application/json" },
-                });
-            }
-            if (!session) {
-                return NextResponse.json({ message: "Unauthorized (no session)" }, { status: 401 });
-            }
-
-            return await getProfileByUserId(session.getUserId());
-        }, { sessionRequired: false });
-    } catch (e: any) {
-        console.error("GET THREW:", e.message);
-        return NextResponse.json({ message: "Internal error" }, { status: 500 });
+        return await withSession(
+            request,
+            async (sessionError, session) => {
+                if (sessionError || !session) {
+                    return errorResponse(requestId, 401, "AUTHENTICATION_REQUIRED", "A valid session is required.");
+                }
+                return getProfileByUserId(session.getUserId(), requestId);
+            },
+            { sessionRequired: false },
+        );
+    } catch {
+        return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
 }
 
 export async function POST(request: NextRequest) {
-    return withSession(request, async (err, session) => {
-        if (err) {
-            return new NextResponse(JSON.stringify({ message: "Unauthorized" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" },
-            });
-        }
-        if (!session) {
-            return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-        }
-
-        try {
-            const { name, username, avatar_url, smart_wallet_address, passkey, status_description } = await request.json();
-
-            if (!name || !username) {
-                return NextResponse.json({ message: "Name and username are required" }, { status: 400 });
-            }
-
-            if (username.length < 5 || username.length > 50) {
-                return NextResponse.json({ message: "Username must be between 5 and 50 characters long" }, { status: 400 });
-            }
-
-            const allowedUsernameRegex = /^[a-zA-Z0-9_@.:+-]+$/;
-            if (!allowedUsernameRegex.test(username)) {
-                return NextResponse.json({ message: "Username contains invalid characters" }, { status: 400 });
-            }
-
-            // Get the current email from SuperTokens
-            const userInfo = await supertokens.getUser(session.getUserId());
-            const email = userInfo?.emails[0];
-
-            if (!email) {
-                return NextResponse.json({ message: "Could not retrieve email from session" }, { status: 400 });
-            }
-
-            const lowerUsername = username.toLowerCase();
-            const existingUser = await User.findOne({ username: lowerUsername });
-            if (existingUser && existingUser.supertokens_id !== session.getUserId()) {
-                return NextResponse.json({ message: "Username already taken" }, { status: 400 });
-            }
-
-            // Smart update: search by id
-            const updateObj: Partial<IUser> = { 
-                email: email || '', 
-                name, 
-                username: lowerUsername, 
-            };
-            if (smart_wallet_address) updateObj.smart_wallet_address = smart_wallet_address;
-            if (avatar_url) updateObj.avatar_url = avatar_url;
-            if (status_description !== undefined) updateObj.status_description = status_description;
-
-            // Handle passkeys: get existing and add new
-            const user = await User.findOne({ supertokens_id: session.getUserId() });
-            if (passkey) {
-                const existingPasskeys = user?.passkeys || [];
-                if (!existingPasskeys.includes(passkey)) {
-                    updateObj.passkeys = [...existingPasskeys, passkey];
+    const requestId = requestIdFor(request);
+    try {
+        return await withSession(
+            request,
+            async (sessionError, session) => {
+                if (sessionError || !session) {
+                    return errorResponse(requestId, 401, "AUTHENTICATION_REQUIRED", "A valid session is required.");
                 }
-            }
+                try {
+                    const input = await parseJsonBody(request, ProfileMutationSchema);
+                    const userInfo = await supertokens.getUser(session.getUserId());
+                    const email = userInfo?.emails[0];
+                    if (!email) {
+                        return errorResponse(requestId, 409, "SESSION_EMAIL_REQUIRED", "The session has no verified email.");
+                    }
 
-            const savedUser = await User.findOneAndUpdate(
-                { supertokens_id: session.getUserId() },
-                updateObj,
-                { upsert: true, new: true }
-            );
+                    const existingUsername = await User.findOne({ username: input.username });
+                    if (existingUsername && existingUsername.supertokens_id !== session.getUserId()) {
+                        return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
+                    }
 
-            return NextResponse.json(savedUser, { status: 201 });
-        } catch (error: any) {
-            console.error("Onboarding error:", error);
-            return NextResponse.json({ message: error.message }, { status: 500 });
-        }
-    });
+                    const savedUser = await User.upsertProfile(session.getUserId(), { ...input, email });
+                    const response = buildPublicProfileResponse({
+                        email: savedUser.email,
+                        name: savedUser.name,
+                        username: savedUser.username,
+                        avatar_url: savedUser.avatar_url,
+                        smart_wallet_address: savedUser.smart_wallet_address,
+                        status_description: savedUser.status_description,
+                    }, email);
+                    return rawProfileResponse(requestId, response, 200);
+                } catch (error) {
+                    return profileMutationError(requestId, error);
+                }
+            },
+            { sessionRequired: false },
+        );
+    } catch {
+        return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not update the profile.");
+    }
 }
