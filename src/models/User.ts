@@ -38,8 +38,8 @@ export const User = {
         if (!existing) {
             const result = await query<IUser>(
                 `INSERT INTO users
-                    (supertokens_id, email, name, username, avatar_url, status_description)
-                 VALUES ($1, $2, $3, $4, $5, $6)
+                    (supertokens_id, email, name, username, avatar_url, status_description, smart_wallet_address)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                  RETURNING *`,
                 [
                     userId,
@@ -48,6 +48,7 @@ export const User = {
                     update.username,
                     update.avatar_url ?? null,
                     update.status_description ?? "Citizen of Juvantia Technopark.",
+                    update.smart_wallet_address ?? null,
                 ],
             );
             return result.rows[0];
@@ -60,6 +61,7 @@ export const User = {
                  username = $4,
                  avatar_url = $5,
                  status_description = $6,
+                 smart_wallet_address = $7,
                  updated_at = NOW()
              WHERE supertokens_id = $1
              RETURNING *`,
@@ -72,6 +74,9 @@ export const User = {
                 update.status_description !== undefined
                     ? update.status_description
                     : existing.status_description,
+                update.smart_wallet_address !== undefined
+                    ? update.smart_wallet_address
+                    : existing.smart_wallet_address,
             ],
         );
         return result.rows[0];

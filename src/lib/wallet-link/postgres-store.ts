@@ -1,4 +1,4 @@
-import type { QueryResultRow } from "pg";
+import type { PoolClient, QueryResultRow } from "pg";
 import type { WalletAddress } from "@/contracts/wallet-link";
 import { initDb, transaction } from "@/lib/db";
 import { walletLinkErrors } from "./errors";
@@ -57,6 +57,20 @@ function assertUsableChallenge(row: ChallengeRow | undefined, userId: string, no
     return row;
 }
 
+async function consumeChallenge(
+    client: PoolClient,
+    challengeId: string,
+    now: Date,
+    reason: "linked" | "conflict" | "superseded",
+): Promise<void> {
+    await client.query(
+        `UPDATE wallet_link_challenges
+         SET consumed_at = $2, consumed_reason = $3
+         WHERE challenge_id = $1 AND consumed_at IS NULL`,
+        [challengeId, now, reason],
+    );
+}
+
 export class PostgresWalletLinkStore implements WalletLinkStore {
     async createChallenge(record: WalletChallengeRecord, now: Date): Promise<CreateChallengeResult> {
         await initDb();
@@ -74,7 +88,9 @@ export class PostgresWalletLinkStore implements WalletLinkStore {
                 [record.userId],
             );
             const user = userResult.rows[0];
-            if (!user || !user.name?.trim() || !user.username?.trim()) return { status: "profile_required" };
+            if (!user || !user.name?.trim() || !user.username?.trim()) {
+                return { status: "profile_required" };
+            }
             if (user.smart_wallet_address && !sameAddress(user.smart_wallet_address, record.address)) {
                 return { status: "recovery_required" };
             }
@@ -173,13 +189,9 @@ export class PostgresWalletLinkStore implements WalletLinkStore {
                 if (!user) return { status: "profile_required" };
 
                 if (user.smart_wallet_address) {
-                    await client.query(
-                        `UPDATE wallet_link_challenges
-                         SET consumed_at = $2, consumed_reason = $3
-                         WHERE challenge_id = $1`,
-                        [challengeId, now, sameAddress(user.smart_wallet_address, address) ? "linked" : "conflict"],
-                    );
-                    return sameAddress(user.smart_wallet_address, address)
+                    const sameWallet = sameAddress(user.smart_wallet_address, address);
+                    await consumeChallenge(client, challengeId, now, sameWallet ? "linked" : "conflict");
+                    return sameWallet
                         ? { status: "already_linked" }
                         : { status: "recovery_required" };
                 }
@@ -193,12 +205,7 @@ export class PostgresWalletLinkStore implements WalletLinkStore {
                     [address, userId],
                 );
                 if (ownerResult.rowCount) {
-                    await client.query(
-                        `UPDATE wallet_link_challenges
-                         SET consumed_at = $2, consumed_reason = 'conflict'
-                         WHERE challenge_id = $1`,
-                        [challengeId, now],
-                    );
+                    await consumeChallenge(client, challengeId, now, "conflict");
                     return { status: "address_unavailable" };
                 }
 
@@ -208,12 +215,7 @@ export class PostgresWalletLinkStore implements WalletLinkStore {
                      WHERE supertokens_id = $1`,
                     [userId, address, now],
                 );
-                await client.query(
-                    `UPDATE wallet_link_challenges
-                     SET consumed_at = $2, consumed_reason = 'linked'
-                     WHERE challenge_id = $1`,
-                    [challengeId, now],
-                );
+                await consumeChallenge(client, challengeId, now, "linked");
                 return { status: "linked" };
             });
         } catch (error) {
@@ -223,6 +225,16 @@ export class PostgresWalletLinkStore implements WalletLinkStore {
                 "code" in error &&
                 error.code === "23505"
             ) {
+                await transaction(async (client) => {
+                    await client.query(
+                        `UPDATE wallet_link_challenges
+                         SET consumed_at = $3, consumed_reason = 'conflict'
+                         WHERE challenge_id = $1
+                           AND supertokens_id = $2
+                           AND consumed_at IS NULL`,
+                        [challengeId, userId, now],
+                    );
+                });
                 return { status: "address_unavailable" };
             }
             throw error;

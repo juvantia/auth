@@ -24,7 +24,7 @@ interface ProfileRow extends Record<string, unknown> {
 }
 
 function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 = 200) {
-    return NextResponse.json(data, { status, headers: { "x-request-id": requestId } });
+    return NextResponse.json(data, { status, headers: { "x-request-id": requestId, "cache-control": "no-store" } });
 }
 
 async function getProfileByUserId(userId: string, requestId: string) {

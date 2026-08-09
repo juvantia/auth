@@ -9,7 +9,7 @@ export function createViemWalletSignatureVerifier(
     rpcUrl = process.env.ARC_TESTNET_RPC_URL ?? DEFAULT_ARC_TESTNET_RPC_URL,
 ): WalletSignatureVerifier {
     const parsedRpcUrl = new URL(rpcUrl);
-    if (!['http:', 'https:'].includes(parsedRpcUrl.protocol)) {
+    if (!["http:", "https:"].includes(parsedRpcUrl.protocol)) {
         throw new Error("ARC_TESTNET_RPC_URL must use HTTP or HTTPS.");
     }
     if (arcTestnet.id !== ARC_TESTNET_CHAIN_ID) {
@@ -18,7 +18,7 @@ export function createViemWalletSignatureVerifier(
 
     const client = createPublicClient({
         chain: arcTestnet,
-        transport: http(rpcUrl),
+        transport: http(rpcUrl, { timeout: 10_000, retryCount: 1 }),
     });
 
     return {

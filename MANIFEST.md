@@ -22,6 +22,7 @@
 | `/api/auth/*` | SuperTokens methods | Public/session-specific | OTP, refresh, logout, and SuperTokens protocol |
 | `/api/user/profile` | `GET` | Session required | Sanitized profile and read-only verified wallet state |
 | `/api/user/profile` | `POST` | Session required | Strict `name`, `username`, `avatar_url?`, `status_description?`; unknown wallet/passkey/credential fields are rejected |
+| `/api/user/upload` | `POST` | Session required | Multipart `file`; verified JPG, PNG, or WebP only, maximum 5 MB, server-generated filename |
 | `/api/user/wallet/challenge` | `POST` | Session required | Creates a short-lived, single-use challenge bound to session user, normalized address, Arc Testnet, and expiry |
 | `/api/user/wallet/link` | `POST` | Session required | Verifies the challenge signature and atomically consumes the challenge while linking the wallet |
 | `/api/user/wallet` | `POST` | Retired (`410`) | Never writes; directs clients to challenge/link |
@@ -37,6 +38,10 @@ New wallet-proof routes use:
 ```
 
 Profile success bodies retain their existing unwrapped compatibility shape for the gateway mapper, but are strict allow-list DTOs.
+
+Avatar uploads ignore the client filename, validate both MIME and file signature,
+reject SVG/executable payloads, and are written with a random non-overwriting
+name. Native clients access this capability only through `/v1/auth/upload`.
 
 ## Wallet proof protocol
 

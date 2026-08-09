@@ -28,6 +28,7 @@ let initialization: Promise<void> | undefined;
 
 async function synchronizeSchema(): Promise<void> {
     await transaction(async (client) => {
+        await client.query("SELECT pg_advisory_xact_lock(hashtext('juvantia-auth-schema-v1'))");
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 supertokens_id VARCHAR(255) PRIMARY KEY,

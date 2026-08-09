@@ -26,7 +26,7 @@ describe("official viem wallet verifier", () => {
         const verifier = createViemWalletSignatureVerifier("https://rpc.example.test");
 
         await expect(verifier.verify({ address, message: "synthetic challenge", signature })).resolves.toBe(true);
-        expect(mocks.http).toHaveBeenCalledWith("https://rpc.example.test");
+        expect(mocks.http).toHaveBeenCalledWith("https://rpc.example.test", { timeout: 10_000, retryCount: 1 });
         expect(mocks.createPublicClient).toHaveBeenCalledWith(
             expect.objectContaining({ chain: expect.objectContaining({ id: 5_042_002 }) }),
         );
