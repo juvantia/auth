@@ -29,7 +29,7 @@ services:
       - .env.local
     environment:
       POSTGRESQL_USER: ${POSTGRESQL_USER:-supertokens_user}
-      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-supertokens_password}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD:-supertokens_strong_password_123}
       POSTGRESQL_HOST: ${POSTGRESQL_HOST:-postgres-shared}
       POSTGRESQL_PORT: 5432
       POSTGRESQL_DATABASE_NAME: ${POSTGRESQL_DATABASE_NAME:-supertokens}

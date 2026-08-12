@@ -27,7 +27,6 @@ export const ProfileMutationSchema = z
             .transform((value) => value.toLowerCase()),
         avatar_url: z.string().trim().max(1_000_000).refine(isAllowedAvatar, "Invalid avatar URL").optional(),
         status_description: z.string().trim().max(500).optional(),
-        smart_wallet_address: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
     })
     .strict();
 
