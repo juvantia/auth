@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/session';
 import Session from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
@@ -27,6 +27,7 @@ function Dashboard() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [jwt, setJwt] = useState<string>('');
+  const nativeHandoffStarted = useRef(false);
 
   // Onboarding state
   const [name, setName] = useState('');
@@ -200,6 +201,34 @@ function Dashboard() {
   useEffect(() => {
     if (profile && !needsOnboarding) {
       const urlParams = new URLSearchParams(window.location.search);
+      const nativeRedirectUri = urlParams.get('native_redirect_uri');
+      const nativeState = urlParams.get('state');
+      const codeChallenge = urlParams.get('code_challenge');
+      if (nativeRedirectUri && nativeState && codeChallenge && !nativeHandoffStarted.current) {
+        nativeHandoffStarted.current = true;
+        void fetch('/api/auth/native/authorize', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ redirectUri: nativeRedirectUri, codeChallenge }),
+        })
+          .then(async (response) => {
+            if (!response.ok) throw new Error('Native authorization failed.');
+            const body = await response.json();
+            if (!body?.success || typeof body.data?.code !== 'string') {
+              throw new Error('Native authorization failed.');
+            }
+            const callback = new URL(nativeRedirectUri);
+            callback.searchParams.set('code', body.data.code);
+            callback.searchParams.set('state', nativeState);
+            window.location.href = callback.toString();
+          })
+          .catch((error) => {
+            console.error('Native authorization failed', error);
+            nativeHandoffStarted.current = false;
+          });
+        return;
+      }
       if (urlParams.get('popup') === 'true') {
         setTimeout(() => {
           window.close();
