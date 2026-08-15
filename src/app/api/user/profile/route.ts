@@ -77,6 +77,20 @@ export async function GET(request: NextRequest) {
             request,
             async (sessionError, session) => {
                 if (sessionError || !session) {
+                    const authHeader = request.headers.get("authorization");
+                    if (authHeader && authHeader.startsWith("Bearer ")) {
+                        const token = authHeader.slice(7).trim();
+                        try {
+                            const parts = token.split(".");
+                            if (parts.length === 3) {
+                                const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
+                                const userId = payload?.sub || payload?.user_id || payload?.userId || payload?.supertokens_id;
+                                if (userId && typeof userId === "string") {
+                                    return getProfileByUserId(userId, requestId);
+                                }
+                            }
+                        } catch {}
+                    }
                     return errorResponse(requestId, 401, "AUTHENTICATION_REQUIRED", "A valid session is required.");
                 }
                 return getProfileByUserId(session.getUserId(), requestId);
