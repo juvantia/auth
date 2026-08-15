@@ -8,7 +8,6 @@ export interface IUser {
     username: string | null;
     avatar_url: string | null;
     readonly smart_wallet_address: string | null;
-    readonly passkeys: unknown[];
     status_description: string | null;
     created_at?: Date;
     updated_at?: Date;

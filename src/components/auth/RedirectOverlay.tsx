@@ -30,7 +30,7 @@ export default function RedirectOverlay({
       <p className="font-grotesk text-[11px] uppercase tracking-[0.2em] text-text-secondary/60 mb-6">
         {hasAuthRedirect ? "Redirecting to Application..." : "Synchronizing with Services..."}
       </p>
-      {hasAuthRedirect && isDeepLink && (
+      {hasAuthRedirect && (
         <div className="flex flex-col items-center gap-4 mt-2">
           <a
             href={

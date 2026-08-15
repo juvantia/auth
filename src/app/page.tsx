@@ -252,7 +252,14 @@ function Dashboard() {
             }, 1500);
           } else {
             setTimeout(() => {
-              window.location.href = decodedUrl;
+              try {
+                const redirectUrl = new URL(decodedUrl);
+                if (jwt) redirectUrl.searchParams.set('token', jwt);
+                window.location.href = redirectUrl.toString();
+              } catch {
+                const separator = decodedUrl.includes('?') ? '&' : '?';
+                window.location.href = jwt ? `${decodedUrl}${separator}token=${jwt}` : decodedUrl;
+              }
             }, 1500);
           }
         }
