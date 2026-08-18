@@ -50,7 +50,7 @@ jobs:
             # Stop existing containers to ensure clean start
             docker compose down || true
             
-            if docker compose up -d; then
+            if docker compose up -d --build; then
                echo "✅ [DEPLOY] Containers are up and running"
             else
                echo "❌ [ERROR] Docker compose failed!"
