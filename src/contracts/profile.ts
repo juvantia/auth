@@ -59,7 +59,7 @@ export const CompleteProfileResponseSchema = z
         username: z.string().min(1),
         email: z.string().email().nullable(),
         avatar_url: z.string().nullable(),
-        smart_wallet_address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+        smart_wallet_address: NullableWalletAddressSchema,
         status_description: z.string().nullable(),
     })
     .strict();
@@ -100,7 +100,7 @@ export function buildPublicProfileResponse(source: PublicProfileSource, sessionE
     const statusDescription = nullableString(source.status_description);
     const email = nullableString(source.email) ?? nullableString(sessionEmail);
 
-    if (!name || !username || !walletAddress) {
+    if (!name || !username) {
         return OnboardingProfileResponseSchema.parse({
             needsOnboarding: true,
             email,

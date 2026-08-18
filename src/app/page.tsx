@@ -48,9 +48,9 @@ function Dashboard() {
             const data = await res.json();
             if (data.needsOnboarding) {
               setNeedsOnboarding(true);
-              setName('');
-              setUsername('');
               if (data.user) {
+                setName(data.user.name || '');
+                setUsername(data.user.username || '');
                 setAvatarUrl(data.user.avatar_url || '');
               }
             } else {
