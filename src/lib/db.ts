@@ -51,35 +51,6 @@ async function synchronizeSchema(): Promise<void> {
             ON users (LOWER(smart_wallet_address))
             WHERE smart_wallet_address IS NOT NULL
         `);
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS wallet_link_challenges (
-                challenge_id UUID PRIMARY KEY,
-                supertokens_id VARCHAR(255) NOT NULL REFERENCES users(supertokens_id) ON DELETE CASCADE,
-                wallet_address VARCHAR(42) NOT NULL
-                    CHECK (wallet_address ~ '^0x[0-9A-Fa-f]{40}$'),
-                chain_id INTEGER NOT NULL CHECK (chain_id = 5042002),
-                message TEXT NOT NULL,
-                issued_at TIMESTAMPTZ NOT NULL,
-                expires_at TIMESTAMPTZ NOT NULL CHECK (expires_at > issued_at),
-                attempt_count SMALLINT NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 5),
-                consumed_at TIMESTAMPTZ,
-                consumed_reason VARCHAR(32),
-                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            )
-        `);
-        await client.query(`
-            CREATE INDEX IF NOT EXISTS wallet_link_challenges_user_issued_idx
-            ON wallet_link_challenges (supertokens_id, issued_at DESC)
-        `);
-        await client.query(`
-            CREATE INDEX IF NOT EXISTS wallet_link_challenges_expiry_idx
-            ON wallet_link_challenges (expires_at)
-        `);
-        await client.query(`
-            CREATE INDEX IF NOT EXISTS wallet_link_challenges_active_user_idx
-            ON wallet_link_challenges (supertokens_id, expires_at)
-            WHERE consumed_at IS NULL
-        `);
     });
 }
 
