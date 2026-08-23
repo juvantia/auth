@@ -36,6 +36,22 @@ export const WalletBindingSchema = z
     })
     .strict();
 
+export const SendEURCIntentSchema = z
+    .object({
+        recipientUsername: z
+            .string()
+            .trim()
+            .min(5)
+            .max(50)
+            .regex(USERNAME_PATTERN)
+            .transform((value) => value.toLowerCase()),
+        amount: z.string().trim().regex(/^\d+(?:\.\d{1,6})?$/).refine((value) => {
+            const [whole, fraction = ""] = value.split(".");
+            return /[1-9]/.test(`${whole}${fraction}`);
+        }, "Amount must be greater than zero."),
+    })
+    .strict();
+
 const NullableWalletAddressSchema = z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/)

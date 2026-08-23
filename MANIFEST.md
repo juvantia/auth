@@ -23,6 +23,7 @@
 | `/api/user/profile` | `GET` | Session required | Sanitized profile and read-only verified wallet state |
 | `/api/user/profile` | `POST` | Session required | Strict `name`, `username`, `avatar_url?`, `status_description?`; unknown wallet/passkey/credential fields are rejected |
 | `/api/user/wallet/bind` | `POST` | Session required | Idempotently binds the address returned by a successful native wallet operation to the current citizen; conflicting bindings are rejected |
+| `/api/user/wallet/send-intent` | `POST` | Session required | Resolves a recipient username to its active smart wallet and prepares an exact EURC Arc Testnet transfer intent for native passkey signing |
 | `/api/user/upload` | `POST` | Session required | Multipart `file`; verified JPG, PNG, or WebP only, maximum 5 MB, server-generated filename |
 
 Profile success bodies retain their existing unwrapped compatibility shape for the gateway mapper, but are strict allow-list DTOs.
