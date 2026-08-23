@@ -30,6 +30,12 @@ export const ProfileMutationSchema = z
     })
     .strict();
 
+export const WalletBindingSchema = z
+    .object({
+        address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+    })
+    .strict();
+
 const NullableWalletAddressSchema = z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/)

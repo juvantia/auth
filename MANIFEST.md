@@ -22,6 +22,7 @@
 | `/api/auth/*` | SuperTokens methods | Public/session-specific | OTP, refresh, logout, and SuperTokens protocol |
 | `/api/user/profile` | `GET` | Session required | Sanitized profile and read-only verified wallet state |
 | `/api/user/profile` | `POST` | Session required | Strict `name`, `username`, `avatar_url?`, `status_description?`; unknown wallet/passkey/credential fields are rejected |
+| `/api/user/wallet/bind` | `POST` | Session required | Idempotently binds the address returned by a successful native wallet operation to the current citizen; conflicting bindings are rejected |
 | `/api/user/upload` | `POST` | Session required | Multipart `file`; verified JPG, PNG, or WebP only, maximum 5 MB, server-generated filename |
 
 Profile success bodies retain their existing unwrapped compatibility shape for the gateway mapper, but are strict allow-list DTOs.
