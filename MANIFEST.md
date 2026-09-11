@@ -6,7 +6,7 @@
 
 ## Role and trust boundary
 
-`auth` owns SSO identity, verified email, public citizen profile storage, and the read-only association of a proven Chiado ZeroDev wallet with an authenticated citizen. Wallet addresses are never accepted as profile fields and are never persisted solely because a client submitted an address. Passkey or credential material is not accepted by the profile API.
+`auth` owns SSO identity, verified email, public citizen profile storage, and the read-only association of a proven ZeroDev wallet on the configured blockchain with an authenticated citizen. Wallet addresses are never accepted as profile fields and are never persisted solely because a client submitted an address. Passkey or credential material is not accepted by the profile API.
 
 ## Session contract
 
@@ -34,7 +34,7 @@ name. Native clients access this capability only through `/v1/auth/upload`.
 
 Core owns the proof protocol through gateway `/v1/wallet/binding/challenge` and `/confirm`; see [WALLET_PROTOCOL.md](../core/WALLET_PROTOCOL.md). Auth cannot create or replace bindings. Its old direct bind/send-intent routes are removed.
 
-Profiles read only active `wallet_bindings` rows on chain 10200. A legacy address in `users.smart_wallet_address` does not qualify. Profile mutations never accept wallet fields. Session verification is fail-closed; decoded JWT payloads do not grant access.
+Profiles read only active `wallet_bindings` rows whose chain matches `BLOCKCHAIN_CHAIN_ID`. A legacy address in `users.smart_wallet_address` does not qualify. Profile mutations never accept wallet fields. Session verification is fail-closed; decoded JWT payloads do not grant access.
 
 ## Database contract and deployment order
 

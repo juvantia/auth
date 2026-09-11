@@ -33,6 +33,7 @@ import { GET, POST } from "@/app/api/user/profile/route";
 
 describe("profile mutation route", () => {
     beforeEach(() => {
+        process.env.BLOCKCHAIN_CHAIN_ID = "31337";
         for (const mock of Object.values(mocks)) mock.mockClear();
     });
 
@@ -69,7 +70,7 @@ describe("profile mutation route", () => {
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ needsOnboarding: true, user: { smart_wallet_address: null } });
         expect(mocks.query.mock.calls[1][0]).toContain("state = 'active'");
-        expect(mocks.query.mock.calls[1][1]).toEqual(["session-user"]);
+        expect(mocks.query.mock.calls[1][1]).toEqual(["session-user", 31337]);
     });
 
     it("reads the active proof-gated wallet instead of the legacy profile value", async () => {

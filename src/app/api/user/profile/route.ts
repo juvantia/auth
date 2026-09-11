@@ -11,6 +11,7 @@ import { parseJsonBody, RequestValidationError } from "@/lib/http/request-valida
 import { query } from "@/lib/db";
 import { ensureSuperTokensInitialized } from "@/lib/supertokens-server";
 import { User } from "@/models/User";
+import { blockchainChainId } from "@/config/blockchain";
 
 ensureSuperTokensInitialized();
 
@@ -29,8 +30,8 @@ function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 
 
 async function verifiedWalletAddress(userId: string): Promise<string | null> {
     const result = await query<{ address: string }>(
-        "SELECT address FROM wallet_bindings WHERE user_id = $1 AND chain_id = 10200 AND state = 'active'",
-        [userId],
+        "SELECT address FROM wallet_bindings WHERE user_id = $1 AND chain_id = $2 AND state = 'active'",
+        [userId, blockchainChainId()],
     );
     return result.rows[0]?.address ?? null;
 }
