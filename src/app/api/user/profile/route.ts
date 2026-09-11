@@ -27,6 +27,14 @@ function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 
     return NextResponse.json(data, { status, headers: { "x-request-id": requestId, "cache-control": "no-store" } });
 }
 
+async function verifiedWalletAddress(userId: string): Promise<string | null> {
+    const result = await query<{ address: string }>(
+        "SELECT address FROM wallet_bindings WHERE user_id = $1 AND chain_id = 10200 AND state = 'active'",
+        [userId],
+    );
+    return result.rows[0]?.address ?? null;
+}
+
 async function getProfileByUserId(userId: string, requestId: string) {
     try {
         const result = await query<ProfileRow>(
@@ -51,7 +59,9 @@ async function getProfileByUserId(userId: string, requestId: string) {
             return errorResponse(requestId, 404, "PROFILE_NOT_FOUND", "The citizen profile was not found.");
         }
 
-        return rawProfileResponse(requestId, buildPublicProfileResponse(user, sessionEmail));
+        return rawProfileResponse(requestId, buildPublicProfileResponse({
+            ...user, smart_wallet_address: await verifiedWalletAddress(userId),
+        }, sessionEmail));
     } catch {
         return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
@@ -77,20 +87,6 @@ export async function GET(request: NextRequest) {
             request,
             async (sessionError, session) => {
                 if (sessionError || !session) {
-                    const authHeader = request.headers.get("authorization");
-                    if (authHeader && authHeader.startsWith("Bearer ")) {
-                        const token = authHeader.slice(7).trim();
-                        try {
-                            const parts = token.split(".");
-                            if (parts.length === 3) {
-                                const payload = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf-8"));
-                                const userId = payload?.sub || payload?.user_id || payload?.userId || payload?.supertokens_id;
-                                if (userId && typeof userId === "string") {
-                                    return getProfileByUserId(userId, requestId);
-                                }
-                            }
-                        } catch {}
-                    }
                     return errorResponse(requestId, 401, "AUTHENTICATION_REQUIRED", "A valid session is required.");
                 }
                 return getProfileByUserId(session.getUserId(), requestId);
@@ -130,7 +126,7 @@ export async function POST(request: NextRequest) {
                         name: savedUser.name,
                         username: savedUser.username,
                         avatar_url: savedUser.avatar_url,
-                        smart_wallet_address: savedUser.smart_wallet_address,
+                        smart_wallet_address: await verifiedWalletAddress(session.getUserId()),
                         status_description: savedUser.status_description,
                     }, email);
                     return rawProfileResponse(requestId, response, 200);

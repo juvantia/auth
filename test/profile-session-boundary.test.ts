@@ -50,4 +50,13 @@ describe("profile session boundary", () => {
         });
         expect(mocks.getUser).not.toHaveBeenCalled();
     });
+
+    it("rejects a forged Bearer payload instead of reading the named citizen", async () => {
+        const payload = Buffer.from(JSON.stringify({ sub: "another-citizen" })).toString("base64url");
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/profile", {
+            headers: { authorization: `Bearer e30.${payload}.forged` },
+        }));
+        expect(response.status).toBe(401);
+        expect(mocks.getUser).not.toHaveBeenCalled();
+    });
 });

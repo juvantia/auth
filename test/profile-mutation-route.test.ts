@@ -29,7 +29,7 @@ vi.mock("@/models/User", () => ({
     User: { findOne: mocks.findOne, upsertProfile: mocks.upsertProfile },
 }));
 
-import { POST } from "@/app/api/user/profile/route";
+import { GET, POST } from "@/app/api/user/profile/route";
 
 describe("profile mutation route", () => {
     beforeEach(() => {
@@ -58,5 +58,28 @@ describe("profile mutation route", () => {
         expect(mocks.query).not.toHaveBeenCalled();
         expect(mocks.findOne).not.toHaveBeenCalled();
         expect(mocks.upsertProfile).not.toHaveBeenCalled();
+    });
+
+    it("does not promote an unverified legacy address to a ZeroDev wallet", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user",
+            smart_wallet_address: "0x1111111111111111111111111111111111111111" }] });
+        mocks.query.mockResolvedValueOnce({ rows: [] });
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ needsOnboarding: true, user: { smart_wallet_address: null } });
+        expect(mocks.query.mock.calls[1][0]).toContain("state = 'active'");
+        expect(mocks.query.mock.calls[1][1]).toEqual(["session-user"]);
+    });
+
+    it("reads the active proof-gated wallet instead of the legacy profile value", async () => {
+        const provenAddress = "0x2222222222222222222222222222222222222222";
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user",
+            smart_wallet_address: "0x1111111111111111111111111111111111111111" }] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ address: provenAddress }] });
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ smart_wallet_address: provenAddress });
     });
 });
