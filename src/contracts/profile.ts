@@ -100,7 +100,7 @@ export function buildPublicProfileResponse(source: PublicProfileSource, sessionE
     const statusDescription = nullableString(source.status_description);
     const email = nullableString(source.email) ?? nullableString(sessionEmail);
 
-    if (!name || !username || !walletAddress) {
+    if (!name || !username) {
         return OnboardingProfileResponseSchema.parse({
             needsOnboarding: true,
             email,

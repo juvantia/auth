@@ -192,13 +192,17 @@ export const frontendConfig = (): SuperTokensConfig => {
     async getRedirectionURL(context) {
         if (context.action === "SUCCESS" && typeof window !== "undefined") {
             const urlParams = new URLSearchParams(window.location.search);
-            const redirect = urlParams.get("auth_redirect") || urlParams.get("redirectToPath");
-            if (redirect === "close") {
+            const authRedirect = urlParams.get("auth_redirect");
+            if (authRedirect) {
+                return `/?auth_redirect=${encodeURIComponent(authRedirect)}`;
+            }
+            const redirectToPath = urlParams.get("redirectToPath");
+            if (redirectToPath === "close") {
                 window.close();
                 return undefined;
             }
-            if (redirect) {
-                return decodeURIComponent(redirect);
+            if (redirectToPath) {
+                return decodeURIComponent(redirectToPath);
             }
             return "/";
         }

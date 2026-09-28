@@ -71,9 +71,31 @@ describe("sanitized profile read model", () => {
             smart_wallet_address: "not-an-address",
         });
 
+        expect(result).toEqual({
+            email: "ada@example.test",
+            name: "Ada",
+            username: "ada_user",
+            avatar_url: null,
+            smart_wallet_address: null,
+            status_description: null,
+        });
+    });
+
+    it("returns onboarding state when name or username is missing", () => {
+        const result = buildPublicProfileResponse({
+            email: "ada@example.test",
+            name: null,
+            username: null,
+        });
+
         expect(result).toMatchObject({
             needsOnboarding: true,
-            user: { smart_wallet_address: null },
+            email: "ada@example.test",
+            user: {
+                name: null,
+                username: null,
+                smart_wallet_address: null,
+            },
         });
     });
 });

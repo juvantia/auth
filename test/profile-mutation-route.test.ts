@@ -68,7 +68,14 @@ describe("profile mutation route", () => {
         mocks.query.mockResolvedValueOnce({ rows: [] });
         const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
         expect(response.status).toBe(200);
-        expect(await response.json()).toMatchObject({ needsOnboarding: true, user: { smart_wallet_address: null } });
+        expect(await response.json()).toEqual({
+            email: "ada@example.test",
+            name: "Ada",
+            username: "ada_user",
+            avatar_url: null,
+            smart_wallet_address: null,
+            status_description: null,
+        });
         expect(mocks.query.mock.calls[1][0]).toContain("state = 'active'");
         expect(mocks.query.mock.calls[1][1]).toEqual(["session-user", 31337]);
     });
