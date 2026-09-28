@@ -29,11 +29,17 @@ function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 
 }
 
 async function verifiedWalletAddress(userId: string): Promise<string | null> {
-    const result = await query<{ address: string }>(
-        "SELECT address FROM wallet_bindings WHERE user_id = $1 AND chain_id = $2 AND state = 'active'",
-        [userId, blockchainChainId()],
-    );
-    return result.rows[0]?.address ?? null;
+    try {
+        const chainId = blockchainChainId();
+        const result = await query<{ address: string }>(
+            "SELECT address FROM wallet_bindings WHERE user_id = $1 AND chain_id = $2 AND state = 'active'",
+            [userId, chainId],
+        );
+        return result.rows[0]?.address ?? null;
+    } catch (error) {
+        console.error("Failed to query verified wallet address:", error);
+        return null;
+    }
 }
 
 async function getProfileByUserId(userId: string, requestId: string) {
@@ -63,7 +69,8 @@ async function getProfileByUserId(userId: string, requestId: string) {
         return rawProfileResponse(requestId, buildPublicProfileResponse({
             ...user, smart_wallet_address: await verifiedWalletAddress(userId),
         }, sessionEmail));
-    } catch {
+    } catch (error) {
+        console.error("getProfileByUserId failed:", error);
         return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
 }
@@ -78,6 +85,7 @@ function profileMutationError(requestId: string, error: unknown) {
     if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
         return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
     }
+    console.error("profileMutationError unhandled error:", error);
     return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not update the profile.");
 }
 
@@ -94,7 +102,8 @@ export async function GET(request: NextRequest) {
             },
             { sessionRequired: false },
         );
-    } catch {
+    } catch (error) {
+        console.error("GET /api/user/profile unhandled error:", error);
         return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
 }
@@ -137,7 +146,8 @@ export async function POST(request: NextRequest) {
             },
             { sessionRequired: false },
         );
-    } catch {
+    } catch (error) {
+        console.error("POST /api/user/profile unhandled error:", error);
         return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not update the profile.");
     }
 }
