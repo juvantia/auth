@@ -46,7 +46,7 @@ export const User = {
                     update.name,
                     update.username,
                     update.avatar_url ?? null,
-                    update.status_description ?? "Citizen of Juvantia Technopark.",
+                    update.status_description ?? "Citizen of JUVANTIA.",
                 ],
             );
             return result.rows[0];

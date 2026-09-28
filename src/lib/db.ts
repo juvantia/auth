@@ -38,7 +38,7 @@ async function synchronizeSchema(): Promise<void> {
                 avatar_url TEXT,
                 smart_wallet_address VARCHAR(255) UNIQUE,
                 status VARCHAR(50) DEFAULT 'citizen',
-                status_description TEXT DEFAULT 'Citizen of Juvantia Technopark.',
+                status_description TEXT DEFAULT 'Citizen of JUVANTIA.',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )

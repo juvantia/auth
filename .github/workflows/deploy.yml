@@ -4,7 +4,20 @@ on:
     branches: [ "main" ]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: npm test
+      - run: npx tsc --noEmit
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to VPS
@@ -33,29 +46,19 @@ jobs:
 
             # Environment Setup
             echo "📝 [DEPLOY] Updating environment variables..."
-            echo "${{ secrets.ENV_LOCAL }}" > .env.local
-            cp .env.local .env
-            echo "✅ [DEPLOY] .env configured"
+            if [ -n "${{ secrets.ENV_LOCAL }}" ]; then
+              echo "${{ secrets.ENV_LOCAL }}" > .env.local
+              cp .env.local .env
+              echo "✅ [DEPLOY] .env configured"
+            fi
 
             # Build and Launch
-            echo "📦 [DEPLOY] Building Docker image..."
-            if docker build -t ghcr.io/${{ github.repository }}:latest .; then
-              echo "✅ [DEPLOY] Image built successfully"
-            else
-              echo "❌ [ERROR] Docker build failed!"
-              exit 1
-            fi
+            echo "📦 [DEPLOY] Building Docker image for Auth..."
+            docker compose build auth
 
             echo "🔌 [DEPLOY] Orchestrating containers..."
-            # Stop existing containers to ensure clean start
-            docker compose down || true
-            
-            if docker compose up -d --build; then
-               echo "✅ [DEPLOY] Containers are up and running"
-            else
-               echo "❌ [ERROR] Docker compose failed!"
-               exit 1
-            fi
+            docker compose up -d auth
+            echo "✅ [DEPLOY] Containers are up and running"
 
             # Cleanup
             echo "🧹 [DEPLOY] Cleaning up stale images..."
