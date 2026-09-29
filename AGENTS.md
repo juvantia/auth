@@ -1,75 +1,75 @@
 # Juvantia Auth Instructions (`auth`)
 
-**Service:** Единая точка идентификации, SSO и публичных профилей граждан экосистемы Juvantia.  
-**Domain:** `https://auth.juvantia.org`  
-**Core Tech:** Next.js App Router (Node.js 20), SuperTokens (Passwordless Email OTP), PostgreSQL (`postgres-shared`), Zod, Viem.  
-**Container:** `auth-service` (порт 3000), зависимость: `supertokens` (порт 3567), сеть: `juvantia-network`.
+**Service:** Unified identity provider, SSO, and public citizen profiles for the Juvantia ecosystem.
+**Domain:** `https://auth.juvantia.org`
+**Core Tech:** Next.js App Router (Node.js 20), SuperTokens (Passwordless Email OTP), PostgreSQL (`postgres-shared`), Zod, Viem.
+**Container:** `auth-service` (port 3000), dependency: `supertokens` (port 3567), network: `juvantia-network`.
 
 ---
 
-## 1. Архитектурная роль и границы доверия
+## 1. Architectural Role and Trust Boundaries
 
-1. **SSO и идентификация граждан**:
-   - `auth` владеет учетными записями SuperTokens, подтвержденными email-адресами и публичными данными профилей граждан (`name`, `username`, `avatar_url`, `status`, `status_description`).
-   - Идентификация граждан в защищенных эндпоинтах осуществляется строго через верифицированные сессии SuperTokens (`withSession`).
-   - Декодированные JWT-пейлоады или произвольные Bearer-токены без криптографической верификации сессии отклоняются (`401 Unauthorized`).
-   - Сервис никогда не раскрывает клиенту `supertokens_id`, внутренние ошибки базы данных, RPC-ошибки или значения переменных окружения.
+1. **SSO and Citizen Identification**:
+   - `auth` owns SuperTokens accounts, verified email addresses, and public citizen profile data (`name`, `username`, `avatar_url`, `status`, `status_description`).
+   - Citizen identification on protected endpoints MUST be performed strictly via verified SuperTokens sessions (`withSession`).
+   - Decoded JWT payloads or arbitrary Bearer tokens without cryptographic session verification MUST be rejected (`401 Unauthorized`).
+   - The service NEVER discloses `supertokens_id`, internal database errors, RPC errors, or environment variable values to the client.
 
-2. **Запрет произвольной привязки кошельков**:
-   - Адреса кошельков категорически запрещено принимать как входящие поля профиля.
-   - Прямые маршруты привязки кошелька (`/api/user/wallet/bind`) и создание интентов на переводы (`/api/user/wallet/send-intent`) в `auth` **упразднены**.
-   - Протокол криптографического пруфа владения смарт-аккаунтом ZeroDev Kernel (ERC-4337) принадлежит сервису `core` и маршрутизируется через API Gateway: `/v1/wallet/binding/challenge` и `/v1/wallet/binding/confirm`.
-   - `auth` выполняет исключительно **read-only чтение** активной записи из таблицы `wallet_bindings`, соответствующей текущему `BLOCKCHAIN_CHAIN_ID`.
+2. **Prohibition of Arbitrary Wallet Binding**:
+   - Wallet addresses MUST NOT be accepted as incoming profile fields under any circumstances.
+   - Direct wallet binding routes (`/api/user/wallet/bind`) and transfer intent creation (`/api/user/wallet/send-intent`) have been **removed** from `auth`.
+   - The cryptographic proof protocol for ZeroDev Kernel smart account (ERC-4337) ownership belongs to the `core` service and is routed via the API Gateway: `/v1/wallet/binding/challenge` and `/v1/wallet/binding/confirm`.
+   - `auth` performs only **read-only queries** for the active record in the `wallet_bindings` table matching the current `BLOCKCHAIN_CHAIN_ID`.
 
-3. **Хранение секретов и ключевого материала**:
-   - В сервисе категорически запрещено хранить или передавать приватные ключи, сид-фразы, биометрические данные или passkey-секреты.
-
----
-
-## 2. Клиентский контракт сессий
-
-- **Web-клиенты**: используют кросс-доменные SuperTokens cookies на `.juvantia.org`.
-- **Нативный мобильный клиент (`Juvantia Citizen`)**: использует заголовочный режим передачи токенов (`st-auth-mode: header`, заголовки `st-access-token`, `st-refresh-token`, `anti-csrf`).
-- Маршрутизация внешнего трафика граждан к `auth` разрешена напрямую только для протокола авторизации `/api/auth/*`. Все остальные операции мобильного приложения обращаются через API Gateway [`api.juvantia.org/v1`](file:///home/delaforge/juvantia/api).
+3. **Storage of Secrets and Key Material**:
+   - Storing or transmitting private keys, seed phrases, biometric data, or passkey secrets within the service is STRICTLY PROHIBITED.
 
 ---
 
-## 3. Спецификация пользовательских маршрутов
+## 2. Client Session Contract
 
-| Эндпоинт | Метод | Авторизация | Описание и контракт |
+- **Web clients**: use cross-domain SuperTokens cookies on `.juvantia.org`.
+- **Native mobile client (`Juvantia Citizen`)**: uses header-based token transmission (`st-auth-mode: header`, headers `st-access-token`, `st-refresh-token`, `anti-csrf`).
+- Routing of external citizen traffic directly to `auth` is permitted ONLY for the authorization protocol `/api/auth/*`. All other mobile application operations MUST go through the API Gateway [`api.juvantia.org/v1`](../api).
+
+---
+
+## 3. User Route Specifications
+
+| Endpoint | Method | Authorization | Description and Contract |
 | :--- | :--- | :--- | :--- |
-| `/api/auth/*` | Методы SuperTokens | Public / Session | Email OTP вход, обновление сессии, логаут, SuperTokens core-протокол. |
-| `/api/user/profile` | `GET` | Требуется сессия | Чтение профиля гражданина и верифицированного адреса смарт-аккаунта (`wallet_bindings`). Возвращает `needsOnboarding: true`, если имя, username или кошелек не заданы. |
-| `/api/user/profile` | `POST` | Требуется сессия | Строгий DTO: `name`, `username`, `avatar_url?`, `status_description?`. Любые поля кошельков, паролей или ролей отклоняются с ошибкой валидации. |
-| `/api/user/upload` | `POST` | Требуется сессия | Загрузка аватара (multipart `file`). Разрешены только JPG, PNG, WebP до 5 МБ. Проверка сигнатуры файла (magic bytes), генерация случайного имени файла. Исполняемые файлы и SVG строго отклоняются. |
+| `/api/auth/*` | SuperTokens methods | Public / Session | Email OTP login, session refresh, logout, SuperTokens core protocol. |
+| `/api/user/profile` | `GET` | Session required | Reads citizen profile and verified smart account address (`wallet_bindings`). Returns `needsOnboarding: true` if name, username, or wallet is unset. |
+| `/api/user/profile` | `POST` | Session required | Strict DTO: `name`, `username`, `avatar_url?`, `status_description?`. Any wallet, password, or role fields are rejected with a validation error. |
+| `/api/user/upload` | `POST` | Session required | Avatar upload (multipart `file`). Only JPG, PNG, and WebP up to 5 MB are allowed. Verifies file signature (magic bytes) and generates a random filename. Executable files and SVG are strictly rejected. |
 
 ---
 
-## 4. Контракт базы данных
+## 4. Database Contract
 
-`auth` подключается к общему кластеру PostgreSQL (`postgres-shared`):
-- База данных `supertokens`: обслуживается напрямую сервисом `supertokens` (схема SuperTokens).
-- База данных `juvantia`:
-  - Таблица `users`: публичные профили граждан (`supertokens_id`, `email`, `name`, `username`, `avatar_url`, `status`, `status_description`, `smart_wallet_address` как read-side совместимость).
-  - Таблица `wallet_bindings`: источник истины для адреса смарт-аккаунта (`state = 'active'`, `chain_id = BLOCKCHAIN_CHAIN_ID`).
+`auth` connects to the shared PostgreSQL cluster (`postgres-shared`):
+- `supertokens` database: maintained directly by the `supertokens` service (SuperTokens schema).
+- `juvantia` database:
+  - `users` table: public citizen profiles (`supertokens_id`, `email`, `name`, `username`, `avatar_url`, `status`, `status_description`, `smart_wallet_address` as read-side compatibility).
+  - `wallet_bindings` table: source of truth for the smart account address (`state = 'active'`, `chain_id = BLOCKCHAIN_CHAIN_ID`).
 
 ---
 
-## 5. Регламент локальной проверки
+## 5. Local Verification Protocol
 
-Перед коммитом изменений обязательно выполнить проверки в директории `auth`:
+Before committing changes, the following checks MUST be executed inside the `auth` directory:
 ```sh
-npm test              # Запуск набора тестов Vitest (все тесты обязаны проходить)
-npx tsc --noEmit      # Проверка статической типизации TypeScript
-npm run lint          # Проверка ESLint
+npm test              # Run the Vitest test suite (all tests must pass)
+npx tsc --noEmit      # TypeScript static type check
+npm run lint          # Run ESLint check
 ```
 
 ---
 
-## 6. Деплой и инфраструктура
+## 6. Deployment and Infrastructure
 
-- Репозиторий деплоится через GitHub Actions (`.github/workflows/deploy.yml`) при пуше в ветку `main`.
-- Все коммиты и пуши выполняются строго внутри каталога `auth/`.
-- На VPS сервис работает под управлением Docker Compose в каталоге `/root/auth`:
-  - `auth-service`: образ `auth-auth:latest`, порт 3000.
-  - `supertokens`: образ `registry.supertokens.io/supertokens/supertokens-postgresql:latest`, порт 3567.
+- The repository is deployed via GitHub Actions (`.github/workflows/deploy.yml`) on push to the `main` branch.
+- All commits and pushes MUST be executed strictly inside the `auth/` directory.
+- On the VPS, the service runs under Docker Compose in `/root/auth`:
+  - `auth-service`: image `auth-auth:latest`, port 3000.
+  - `supertokens`: image `registry.supertokens.io/supertokens/supertokens-postgresql:latest`, port 3567.
