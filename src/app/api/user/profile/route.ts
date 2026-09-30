@@ -28,6 +28,8 @@ function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 
     return NextResponse.json(data, { status, headers: { "x-request-id": requestId, "cache-control": "no-store" } });
 }
 
+class WalletBindingUnavailable extends Error {}
+
 async function verifiedWalletAddress(userId: string): Promise<string | null> {
     try {
         const chainId = blockchainChainId();
@@ -36,16 +38,16 @@ async function verifiedWalletAddress(userId: string): Promise<string | null> {
             [userId, chainId],
         );
         return result.rows[0]?.address ?? null;
-    } catch (error) {
-        console.error("Failed to query verified wallet address:", error);
-        return null;
+    } catch {
+        console.error("Failed to query verified wallet address");
+        throw new WalletBindingUnavailable("The smart account binding could not be checked.");
     }
 }
 
 async function getProfileByUserId(userId: string, requestId: string) {
     try {
         const result = await query<ProfileRow>(
-            `SELECT email, name, username, avatar_url, smart_wallet_address, status_description
+            `SELECT email, name, username, avatar_url, status_description
              FROM users WHERE supertokens_id = $1`,
             [userId],
         );
@@ -57,7 +59,7 @@ async function getProfileByUserId(userId: string, requestId: string) {
             const insertResult = await query<ProfileRow>(
                 `INSERT INTO users (supertokens_id, email, name)
                  VALUES ($1, $2, $3)
-                 RETURNING email, name, username, avatar_url, smart_wallet_address, status_description`,
+                 RETURNING email, name, username, avatar_url, status_description`,
                 [userId, sessionEmail, sessionEmail.split("@")[0]],
             );
             user = insertResult.rows[0];
@@ -70,12 +72,18 @@ async function getProfileByUserId(userId: string, requestId: string) {
             ...user, smart_wallet_address: await verifiedWalletAddress(userId),
         }, sessionEmail));
     } catch (error) {
+        if (error instanceof WalletBindingUnavailable) return walletBindingError(requestId);
         console.error("getProfileByUserId failed:", error);
         return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not load the profile.");
     }
 }
 
+function walletBindingError(requestId: string) {
+    return errorResponse(requestId, 503, "WALLET_BINDING_UNAVAILABLE", "The smart account binding is temporarily unavailable.");
+}
+
 function profileMutationError(requestId: string, error: unknown) {
+    if (error instanceof WalletBindingUnavailable) return walletBindingError(requestId);
     if (error instanceof RequestValidationError) {
         return errorResponse(requestId, 400, "INVALID_REQUEST", error.message, error.fields);
     }
@@ -130,13 +138,14 @@ export async function POST(request: NextRequest) {
                         return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
                     }
 
+                    const walletAddress = await verifiedWalletAddress(session.getUserId());
                     const savedUser = await User.upsertProfile(session.getUserId(), { ...input, email });
                     const response = buildPublicProfileResponse({
                         email: savedUser.email,
                         name: savedUser.name,
                         username: savedUser.username,
                         avatar_url: savedUser.avatar_url,
-                        smart_wallet_address: await verifiedWalletAddress(session.getUserId()),
+                        smart_wallet_address: walletAddress,
                         status_description: savedUser.status_description,
                     }, email);
                     return rawProfileResponse(requestId, response, 200);

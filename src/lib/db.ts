@@ -38,11 +38,13 @@ async function synchronizeSchema(): Promise<void> {
                 avatar_url TEXT,
                 smart_wallet_address VARCHAR(255) UNIQUE,
                 status VARCHAR(50) DEFAULT 'citizen',
-                status_description TEXT DEFAULT 'Citizen of JUVANTIA.',
+                status_description TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        await client.query("ALTER TABLE users ALTER COLUMN status_description DROP DEFAULT");
+        // Legacy schema cleanup only; Auth never stores or reads passkey material.
         await client.query(`
             ALTER TABLE users DROP COLUMN IF EXISTS passkeys
         `);

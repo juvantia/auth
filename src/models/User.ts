@@ -7,7 +7,6 @@ export interface IUser {
     name: string;
     username: string | null;
     avatar_url: string | null;
-    readonly smart_wallet_address: string | null;
     status_description: string | null;
     created_at?: Date;
     updated_at?: Date;
@@ -15,16 +14,18 @@ export interface IUser {
 
 export type ProfileUpdate = ProfileMutation & { email: string };
 
+const PROFILE_COLUMNS = "supertokens_id, email, name, username, avatar_url, status_description";
+
 export const User = {
     findOne: async (criteria: { supertokens_id?: string; username?: string }): Promise<IUser | null> => {
         if (criteria.supertokens_id) {
-            const result = await query<IUser>("SELECT * FROM users WHERE supertokens_id = $1", [
+            const result = await query<IUser>(`SELECT ${PROFILE_COLUMNS} FROM users WHERE supertokens_id = $1`, [
                 criteria.supertokens_id,
             ]);
             return result.rows[0] ?? null;
         }
         if (criteria.username) {
-            const result = await query<IUser>("SELECT * FROM users WHERE username = $1", [
+            const result = await query<IUser>(`SELECT ${PROFILE_COLUMNS} FROM users WHERE username = $1`, [
                 criteria.username.toLowerCase(),
             ]);
             return result.rows[0] ?? null;
@@ -39,14 +40,14 @@ export const User = {
                 `INSERT INTO users
                     (supertokens_id, email, name, username, avatar_url, status_description)
                  VALUES ($1, $2, $3, $4, $5, $6)
-                 RETURNING *`,
+                 RETURNING ${PROFILE_COLUMNS}`,
                 [
                     userId,
                     update.email,
                     update.name,
                     update.username,
                     update.avatar_url ?? null,
-                    update.status_description ?? "Citizen of JUVANTIA.",
+                    update.status_description ?? null,
                 ],
             );
             return result.rows[0];
@@ -61,7 +62,7 @@ export const User = {
                  status_description = $6,
                  updated_at = NOW()
              WHERE supertokens_id = $1
-             RETURNING *`,
+             RETURNING ${PROFILE_COLUMNS}`,
             [
                 userId,
                 update.email,

@@ -90,4 +90,29 @@ describe("profile mutation route", () => {
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ smart_wallet_address: provenAddress });
     });
+    it("returns an unavailable error when the wallet lookup fails, instead of an unlinked profile", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user" }] });
+        mocks.query.mockRejectedValueOnce(new Error("private database details"));
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
+        expect(response.status).toBe(503);
+        const body = await response.json();
+        expect(body).toMatchObject({ success: false, error: { code: "WALLET_BINDING_UNAVAILABLE" } });
+        expect(JSON.stringify(body)).not.toContain("private database details");
+        expect(body).not.toHaveProperty("smart_wallet_address");
+    });
+
+    it("does not save a profile when the response wallet lookup is unavailable", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.findOne.mockResolvedValue(null);
+        mocks.query.mockRejectedValueOnce(new Error("database unavailable"));
+        const response = await POST(new NextRequest("https://auth.example.test/api/user/profile", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: "Ada", username: "ada_user", status_description: "My biography" }),
+        }));
+        expect(response.status).toBe(503);
+        expect(await response.json()).toMatchObject({ success: false, error: { code: "WALLET_BINDING_UNAVAILABLE" } });
+        expect(mocks.upsertProfile).not.toHaveBeenCalled();
+    });
+
 });
