@@ -1,9 +1,10 @@
 import { getAddress } from "viem";
 import { z } from "zod";
+import { CALLSIGN_MAX } from "./limits";
 
 export const ProfileMutationSchema = z
     .object({
-        name: z.string().trim().min(1).max(16).optional(),
+        name: z.string().trim().min(1).max(CALLSIGN_MAX).optional(),
         status_description: z.string().trim().max(500).optional(),
         active_phalera_id: z.string().trim().max(64).nullable().optional(),
     })
@@ -35,7 +36,7 @@ export const OnboardingProfileResponseSchema = z
 export const CompleteProfileResponseSchema = z
     .object({
         supertokens_id: z.string().nullable().optional(),
-        name: z.string().min(1).max(16),
+        name: z.string().min(1).max(CALLSIGN_MAX),
         email: z.string().email().nullable(),
         smart_wallet_address: NullableWalletAddressSchema,
         status_description: z.string().nullable(),

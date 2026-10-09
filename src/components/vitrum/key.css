@@ -1,0 +1,377 @@
+/* ---------- Glass key: the action ---------- */
+.vt-key-slot {
+  position: relative;
+  z-index: 5;
+  animation: vt-key-rise 620ms calc(var(--enter-delay) + 480ms + var(--ki, 0) * 80ms) var(--vt-ease-out) backwards;
+}
+
+.vt-key {
+  --key-h: 52px;
+  --glass-fade: 420ms;
+  --glass-sweep: 680ms cubic-bezier(0.45, 0.05, 0.3, 1);
+  position: relative;
+  z-index: 5;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--key-h);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--vt-ink);
+  font-family: var(--vt-grotesk);
+  text-align: left;
+  cursor: pointer;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 200ms var(--vt-ease-out);
+}
+
+.vt-key:focus-visible {
+  outline: none;
+}
+
+.vt-key-slot .vt-key > :is(.vt-key-glow, .vt-key-plate, .vt-key-body, .vt-key-edge) {
+  animation: vt-fade 520ms calc(var(--enter-delay) + 480ms + var(--ki, 0) * 80ms) ease-out backwards;
+}
+
+.vt-key-glow {
+  position: absolute;
+  z-index: 0;
+  overflow: visible;
+  pointer-events: none;
+  filter: blur(5px);
+  opacity: var(--vt-key-glow);
+  transition: opacity 420ms var(--vt-ease-glass);
+}
+
+.vt-key-plate {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 42%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(70% 90% at 0% 0%, rgba(0, 255, 136, 0.08), transparent 70%),
+    radial-gradient(60% 90% at 100% 100%, rgba(0, 212, 255, 0.08), transparent 70%),
+    linear-gradient(180deg, rgba(12, 19, 19, 0.42) 0%, rgba(6, 10, 10, 0.58) 100%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5) brightness(1.1);
+  backdrop-filter: blur(14px) saturate(1.5) brightness(1.1);
+}
+
+/* The raster says "this can be pressed". */
+.vt-key-plate::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(255, 255, 255, var(--vt-key-raster)) 0 1px, rgba(0, 0, 0, var(--vt-key-raster-dark)) 1px 2px, transparent 2px 4px);
+}
+
+.vt-key-body {
+  position: relative;
+  z-index: 4;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  padding: 0 16px;
+}
+
+.vt-key-edge,
+.vt-key-flare,
+.vt-key-spark,
+.vt-key-beam,
+.vt-key-alarm {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.vt-key-edge {
+  z-index: 5;
+  opacity: calc(var(--vt-key-edge) + var(--glint, 0) * (1 - var(--vt-key-edge)));
+  transition: opacity 360ms ease;
+}
+
+.vt-key-flare {
+  z-index: 6;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(190, 255, 235, 0.85));
+  -webkit-mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), #000 calc(var(--vt-reach) - 28px), transparent var(--vt-reach));
+  mask-image: radial-gradient(circle at var(--fx, 50%) var(--fy, 50%), #000 calc(var(--vt-reach) - 28px), transparent var(--vt-reach));
+}
+
+.vt-key-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--vt-icon-ink);
+  transition: color 220ms ease;
+}
+
+.vt-key-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Icon ink: the emblem's own horizontal gradient across each icon. */
+.vt-key:not([aria-disabled="true"]):not(.is-contact) .vt-key-icon svg {
+  stroke: url(#vt-brand-ink);
+}
+
+.vt-key-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vt-key-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: calc(0.13em + var(--glint, 0) * 0.04em);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 16px rgba(190, 255, 235, calc(var(--glint, 0) * 0.35)), 0 1px 12px rgba(0, 0, 0, 0.45);
+  transition: letter-spacing var(--glass-fade) var(--vt-ease-glass), text-shadow var(--glass-fade) ease;
+}
+
+.vt-key[aria-disabled="true"] {
+  cursor: default;
+}
+
+.vt-key[aria-disabled="true"] .vt-key-glow {
+  opacity: 0;
+}
+
+.vt-key[aria-disabled="true"] .vt-key-edge {
+  opacity: 1;
+}
+
+.vt-key[aria-disabled="true"] .vt-key-edge path {
+  stroke: rgba(255, 255, 255, 0.16);
+}
+
+.vt-key[aria-disabled="true"] .vt-key-icon {
+  color: var(--vt-ink-3);
+}
+
+.vt-key[aria-disabled="true"] .vt-key-title {
+  color: var(--vt-ink-2);
+}
+
+.vt-key:focus-visible .vt-key-glow {
+  opacity: 0.75;
+}
+
+.vt-key:focus-visible .vt-key-edge {
+  opacity: 1;
+}
+
+/* ---------- Hover: the Deck's glass, wherever there is a pointer ----------
+   With a mouse (Auth opens as the Deck's popup) a glass key answers as the Deck's keys do: a sheen crosses it left
+   to right and returns on leave, a light runs along its rim with the sheen, the glass warms and its words open up.
+   A finger never hovers, so a phone keeps CONTACT alone. One switch, --glint, drives every layer. */
+@media (hover: hover) and (pointer: fine) {
+  .vt-key:hover {
+    --glint: 1;
+  }
+}
+
+.vt-key:focus-visible {
+  --glint: 1;
+}
+
+/* Waiting, disabled, or riding a row that is moving: no glint. */
+.vt-key:is([aria-disabled="true"], .is-busy),
+.vt-slots.is-moving .vt-key {
+  --glint: 0;
+}
+
+/* The glass warms under the pointer. */
+.vt-key-plate::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 255, 136, 0.035), rgba(0, 212, 255, 0.045));
+  opacity: var(--glint, 0);
+  transition: opacity var(--glass-fade) var(--vt-ease-glass);
+}
+
+.vt-key-sheen {
+  position: absolute;
+  z-index: 1;
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 46%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 136, 0.07) 28%, rgba(255, 255, 255, 0.26) 50%, rgba(0, 212, 255, 0.1) 66%, transparent 100%);
+  transform: translateX(calc(-115% + var(--glint, 0) * 337%)) skewX(-18deg);
+  transition: transform var(--glass-sweep);
+}
+
+/* A soft window over a bright copy of the rim, travelling with the sheen. */
+.vt-key-spark {
+  z-index: 6;
+  filter: drop-shadow(0 0 4px rgba(190, 255, 235, 0.9));
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 42%, #000 58%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 42%, #000 58%, transparent);
+  -webkit-mask-size: 42% 100%;
+  mask-size: 42% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: calc(-80% + var(--glint, 0) * 260%) 0;
+  mask-position: calc(-80% + var(--glint, 0) * 260%) 0;
+  transition: -webkit-mask-position var(--glass-sweep), mask-position var(--glass-sweep);
+}
+
+/* ---------- Press: CONTACT ----------
+   Light trapped in edge-lit glass escapes where the finger touches it; the rim gives its light to the contact. */
+.vt-key-contact {
+  position: absolute;
+  z-index: 2;
+  top: var(--cy, 50%);
+  left: var(--cx, 50%);
+  width: var(--contact-size, 200px);
+  height: var(--contact-size, 200px);
+  margin: calc(var(--contact-size, 200px) / -2) 0 0 calc(var(--contact-size, 200px) / -2);
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    rgba(244, 255, 250, 0.5) 0%,
+    rgba(var(--contact-rgb, 90, 240, 205), 0.26) 20%,
+    rgba(var(--contact-rgb, 90, 240, 205), 0.1) 48%,
+    rgba(var(--contact-rgb, 90, 240, 205), 0.03) 72%,
+    rgba(var(--contact-rgb, 90, 240, 205), 0) 100%
+  );
+  mix-blend-mode: screen;
+  opacity: 0;
+  transform: scale(0.3);
+  transition: opacity 240ms ease, transform 320ms var(--vt-ease-out);
+}
+
+.vt-key-lit {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(var(--contact-rgb, 90, 240, 205), 0.3) 0 1px, transparent 1px 4px);
+  -webkit-mask-image: radial-gradient(circle at var(--cx, 50%) var(--cy, 50%), #000 0, rgba(0, 0, 0, 0.55) 30px, transparent 78px);
+  mask-image: radial-gradient(circle at var(--cx, 50%) var(--cy, 50%), #000 0, rgba(0, 0, 0, 0.55) 30px, transparent 78px);
+  opacity: 0;
+  transition: opacity 280ms ease;
+}
+
+.vt-key.is-contact {
+  transform: scale(0.985);
+}
+
+.vt-key.is-contact .vt-key-contact {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 120ms ease-out, transform 260ms var(--vt-ease-out);
+}
+
+.vt-key.is-contact .vt-key-lit {
+  opacity: 1;
+  transition-duration: 120ms;
+}
+
+.vt-key.is-contact .vt-key-edge {
+  opacity: 0.3;
+  transition: opacity 160ms ease;
+}
+
+.vt-key.is-contact .vt-key-icon {
+  color: #f2fffa;
+}
+
+.vt-key:is(.is-commit, .is-commit-wait) .vt-key-contact {
+  animation: vt-contact-release 340ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.vt-key.is-cancel .vt-key-contact {
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 260ms ease, transform 320ms ease;
+}
+
+/* ---------- Waiting: a white beam runs around the rim until the answer comes; it is never a percentage ---------- */
+.vt-key-beam {
+  z-index: 6;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(190, 255, 235, 0.85));
+  transition: opacity 240ms ease;
+}
+
+.vt-key-alarm {
+  z-index: 6;
+  opacity: 0;
+  filter: drop-shadow(0 0 5px rgba(255, 71, 87, 0.8));
+}
+
+.vt-key.is-busy {
+  cursor: progress;
+}
+
+.vt-key.is-busy .vt-key-edge {
+  opacity: 0.3;
+}
+
+.vt-key.is-busy .vt-key-beam {
+  opacity: 1;
+}
+
+/* Done: the beam closes the circle and the whole rim flashes green. */
+.vt-key.is-done .vt-key-flare {
+  --vt-reach: 1600px;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.75));
+  animation: vt-flare-fade 820ms cubic-bezier(0.3, 0, 0.2, 1) forwards;
+}
+
+.vt-key.is-done .vt-key-flare path:nth-of-type(1) {
+  stroke: #00ff88;
+  stroke-opacity: 0.8;
+}
+
+.vt-key.is-done .vt-key-flare path:nth-of-type(2) {
+  stroke: #e6fff1;
+}
+
+/* Failed: one red flash, then a sentence says what happened. */
+.vt-key.is-failed .vt-key-alarm {
+  animation: vt-alarm-flash 900ms ease-out forwards;
+}
+
+@keyframes vt-key-rise {
+  from { transform: translateY(10px); }
+}
+
+@keyframes vt-contact-release {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.1); }
+}
+
+@keyframes vt-alarm-flash {
+  0% { opacity: 0; }
+  18% { opacity: 0.95; }
+  100% { opacity: 0; }
+}

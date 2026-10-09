@@ -4,7 +4,7 @@ import { ProfileMutationSchema, buildPublicProfileResponse } from "@/contracts/p
 const ADDRESS = "0x1111111111111111111111111111111111111111";
 
 describe("profile mutation contract", () => {
-    it("accepts only public profile fields (name up to 16 chars, status_description, active_phalera_id)", () => {
+    it("accepts only public profile fields (a callsign up to 32 chars, status_description, active_phalera_id)", () => {
         const result = ProfileMutationSchema.parse({
             name: "  Ada Lovelace  ",
             status_description: "Citizen",
@@ -18,9 +18,16 @@ describe("profile mutation contract", () => {
         });
     });
 
-    it("rejects names longer than 16 characters", () => {
+    it("accepts a callsign of exactly 32 characters", () => {
         const result = ProfileMutationSchema.safeParse({
-            name: "This Name Is Way Too Long For A Citizen",
+            name: "Cassius Valerian Aurelius Montes",
+        });
+        expect(result.success).toBe(true);
+    });
+
+    it("rejects callsigns longer than 32 characters", () => {
+        const result = ProfileMutationSchema.safeParse({
+            name: "This Callsign Is Way Too Long For A Citizen",
         });
         expect(result.success).toBe(false);
     });

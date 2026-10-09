@@ -40,7 +40,7 @@
 | :--- | :--- | :--- | :--- |
 | `/api/auth/*` | SuperTokens methods | Public / Session | Email OTP login, session refresh, logout, SuperTokens core protocol. |
 | `/api/user/profile` | `GET` | Session required | Reads citizen profile and verified smart account address (`wallet_bindings`). Returns `needsOnboarding: true` if name is unset; an absent active smart account is valid. |
-| `/api/user/profile` | `POST` | Session required | Strict DTO: `name` (1-16 chars), `status_description?`, `active_phalera_id?`. Any unauthorized fields, wallet, password, or role fields are rejected with a validation error. Legacy `username` and `avatar_url` are completely removed. |
+| `/api/user/profile` | `POST` | Session required | Strict DTO: `name` (the callsign, 1-32 chars), `status_description?`, `active_phalera_id?`. Any unauthorized fields, wallet, password, or role fields are rejected with a validation error. Legacy `username` and `avatar_url` are completely removed. |
 
 ---
 

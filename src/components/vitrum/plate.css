@@ -1,0 +1,183 @@
+/* ---------- Plate: smoked glass in the Civitas silhouette ----------
+   Keys emit light, plates reflect it: no raster, no haze and no glow on a plate; its rim is a dim reflection. */
+.vt-plate {
+  --vt-plate-pad: 18px;
+  position: relative;
+  color: var(--vt-ink);
+  font-family: var(--vt-barlow);
+}
+
+.vt-plate-stage {
+  position: relative;
+  animation: vt-plate-rise 820ms var(--enter-delay) var(--vt-ease-enter) backwards;
+}
+
+.vt-plate-glass {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.45);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.012) 16%, rgba(255, 255, 255, 0) 30%),
+    radial-gradient(80% 45% at 8% 0%, rgba(0, 255, 136, 0.035), transparent 62%),
+    radial-gradient(70% 40% at 100% 100%, rgba(0, 212, 255, 0.035), transparent 70%),
+    linear-gradient(180deg, rgba(9, 14, 14, var(--vt-smoke-top)) 0%, rgba(6, 10, 10, var(--vt-smoke-mid)) 55%, rgba(4, 8, 8, var(--vt-smoke-foot)) 100%);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3) brightness(0.95);
+  backdrop-filter: blur(24px) saturate(1.3) brightness(0.95);
+  animation: vt-fade 560ms var(--enter-delay) ease-out backwards;
+}
+
+.vt-plate-signal {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.vt-plate-signal::after {
+  content: '';
+  position: absolute;
+  inset: -40px;
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+.vt-plate-content {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+}
+
+.vt-plate-frame,
+.vt-plate-glow,
+.vt-plate-flash,
+.vt-plate-beam {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.vt-plate-frame {
+  z-index: 6;
+  transition: opacity 400ms ease;
+}
+
+.vt-plate-frame path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  animation: vt-draw 1100ms calc(var(--enter-delay) + 160ms) var(--vt-ease-draw) backwards;
+}
+
+/* A plate glows only in alarm. */
+.vt-plate-glow {
+  z-index: 0;
+  display: none;
+  filter: blur(6px);
+}
+
+.vt-plate-flash {
+  z-index: 7;
+  opacity: 0;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 136, 0.75));
+}
+
+/* Access granted on arrival: once the rim has drawn in, it flashes green, as a key does when its operation is done. */
+.vt-plate[data-flash="done"] .vt-plate-flash {
+  animation: vt-flare-fade 1100ms calc(var(--enter-delay) + 1180ms) cubic-bezier(0.3, 0, 0.2, 1) both;
+}
+
+/* ACCESS is the one plate that waits for an answer, so it carries a key's waiting light: the white beam runs
+   clockwise around its rim and the rest of the rim dims; when the session is granted, it flashes green. */
+.vt-plate-beam {
+  z-index: 7;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px rgba(190, 255, 235, 0.85));
+  transition: opacity 320ms ease;
+}
+
+.vt-plate.is-waiting .vt-plate-beam {
+  opacity: 1;
+}
+
+.vt-plate.is-waiting .vt-plate-frame {
+  opacity: 0.4;
+}
+
+.vt-plate.is-granted .vt-plate-flash {
+  animation: vt-flare-fade 1100ms cubic-bezier(0.3, 0, 0.2, 1) both;
+}
+
+.vt-plate-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 14px 0 var(--vt-plate-pad);
+}
+
+.vt-plate-head::after {
+  content: '';
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: var(--vt-plate-pad);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vt-hairline) 10%, var(--vt-hairline) 90%, transparent);
+}
+
+.vt-plate-title {
+  margin: 0;
+  font-family: var(--vt-barlow);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: #ffffff;
+  animation: vt-rise 600ms calc(var(--enter-delay) + 240ms) var(--vt-ease-out) backwards;
+}
+
+/* The right side of a plate's head sits below the tab's step. */
+.vt-plate-meta {
+  margin: 9px 0 0 auto;
+}
+
+.vt-plate-label {
+  font: 600 12px/1 var(--vt-barlow);
+  letter-spacing: 0.2em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+}
+
+.vt-plate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px var(--vt-plate-pad) 24px;
+}
+
+/* A body swapped in place fades in; its entrance does not replay. */
+.vt-plate-body.is-swapped {
+  animation: vt-fade 260ms ease-out backwards;
+}
+
+.vt-plate-body.is-swapped :is(.vt-rise, .vt-key-slot, .vt-key-slot .vt-key > *) {
+  animation: none;
+}
+
+@keyframes vt-plate-rise {
+  from { transform: translateY(26px); }
+}
+
+@keyframes vt-draw {
+  from { stroke-dashoffset: 1; }
+}

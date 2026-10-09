@@ -1,0 +1,355 @@
+/* Juvantia Auth's own pieces: the callsign with its phalera, the Civitas ID, the memory slots, the status
+   description, Civitas' border and ACCESS. Shared Neon Vitrum pieces live in src/components/vitrum. */
+
+/* ---------- ACCESS: authenticating, then granted ---------- */
+.vt-status-word {
+  margin: 0;
+  font: 600 34px/0.9 var(--vt-barlow);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.vt-status-word.is-waiting {
+  color: var(--vt-ink-2);
+}
+
+/* The word changes in place: the old one leaves upward, the new one rises in. */
+.vt-status-word.is-out {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.vt-status-word.is-in {
+  animation: vt-rise 460ms var(--vt-ease-out) both;
+}
+
+/* ---------- The citizen: the callsign as written, and the phalera after it, like an emoji ----------
+   A name never wraps. It keeps one line and loses its end to the room it has; the phalera always stays. */
+.vt-name {
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  min-width: 0;
+  margin: 0;
+  font: 600 32px/1.11 var(--vt-barlow);
+  letter-spacing: 0.005em;
+  text-transform: none;
+  color: #ffffff;
+}
+
+/* The clip reaches past the line box, so descenders and accents are never cut, only the end. */
+.vt-name-text {
+  min-width: 0;
+  margin: -8px 0;
+  padding: 8px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* The phalera follows the name as an emoji or X's badge does: its size comes from the name's own type, a little
+   taller than the letters, whatever size they are set in. Its centre sits on the middle of the capitals. */
+.vt-name .vt-phalera {
+  position: relative;
+  top: 0.03em;
+  flex: none;
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0.12em 0.4em rgba(0, 0, 0, 0.45);
+}
+
+.vt-civitas {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vt-civitas-id {
+  margin: 0;
+  font: 500 13px/1.3 var(--vt-grotesk);
+  letter-spacing: 0.02em;
+  color: var(--vt-cyan);
+  overflow-wrap: anywhere;
+  text-shadow: none;
+}
+
+/* ---------- PHALERA: the memory slots, scrolling sideways ----------
+   A finger swipes the row; a mouse drags it or turns its wheel over it. Either way it comes to rest on a slot. */
+.vt-slots {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin: 0 calc(var(--vt-plate-pad) * -1);
+  padding: 6px var(--vt-plate-pad) 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: var(--vt-plate-pad);
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.vt-slots::-webkit-scrollbar {
+  display: none;
+}
+
+/* While a hand moves the row, nothing snaps; while it holds the row, nothing is pressed. */
+.vt-slots.is-moving {
+  scroll-snap-type: none;
+}
+
+.vt-slots.is-grabbing,
+.vt-slots.is-grabbing .vt-key {
+  cursor: grabbing;
+}
+
+.vt-slot-cell {
+  flex: none;
+  width: 84px;
+  scroll-snap-align: start;
+}
+
+/* Doubled class: key.css may load after this file and would give the slot a strip key's 52 px. */
+.vt-key.vt-key--slot {
+  --key-h: auto;
+  height: auto;
+  touch-action: pan-x pan-y;
+}
+
+.vt-key--slot .vt-key-body {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  height: auto;
+  padding: 9px 9px 11px;
+}
+
+.vt-slot-num {
+  font: 600 11px/1 var(--vt-barlow);
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+  color: var(--vt-ink-3);
+}
+
+.vt-slot-art {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto;
+}
+
+.vt-slot-art canvas {
+  display: block;
+  width: 64px;
+  height: 64px;
+  transition: filter 260ms ease;
+}
+
+/* The equipped one wears the emblem's ring. */
+.vt-slot-art::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  padding: 2px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--vt-green), var(--vt-cyan));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.vt-key--slot[aria-pressed="true"] .vt-slot-art::before {
+  opacity: 1;
+}
+
+.vt-key--slot[aria-pressed="false"] .vt-slot-art canvas {
+  filter: brightness(calc(0.78 + var(--glint, 0) * 0.22));
+}
+
+.vt-slot-name {
+  overflow: hidden;
+  font: 500 10.5px/1.2 var(--vt-grotesk);
+  text-align: center;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--vt-ink-2);
+  text-shadow: none;
+}
+
+.vt-slot-state {
+  font: 600 9.5px/1 var(--vt-grotesk);
+  letter-spacing: calc(0.14em + var(--glint, 0) * 0.04em);
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+  transition: letter-spacing var(--glass-fade, 420ms) var(--vt-ease-glass);
+}
+
+.vt-key--slot[aria-pressed="true"] .vt-slot-state {
+  font: 600 11px/1 var(--vt-barlow);
+  letter-spacing: calc(0.18em + var(--glint, 0) * 0.04em);
+  color: var(--vt-green);
+}
+
+.vt-slot-empty {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 9px 11px;
+}
+
+.vt-slot-empty .vt-slot-art {
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  background: rgba(2, 5, 4, 0.55);
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  font: 600 16px/1 var(--vt-barlow);
+  color: var(--vt-ink-4);
+}
+
+.vt-slot-empty .vt-slot-num,
+.vt-slot-empty .vt-slot-state {
+  color: var(--vt-ink-4);
+}
+
+.vt-slot-empty .vt-slot-name {
+  visibility: hidden;
+}
+
+.vt-slots-wait {
+  margin: 0;
+  padding: 26px 0;
+  text-align: center;
+  font: 600 12px/1 var(--vt-barlow);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+  animation: vt-breathe 1.8s ease-in-out infinite;
+}
+
+.vt-seal {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+}
+
+.vt-seal-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.vt-seal-line {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.vt-seal-name {
+  overflow: hidden;
+  font: 600 15px/1.2 var(--vt-grotesk);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #ffffff;
+}
+
+.vt-seal-slot {
+  flex: none;
+  font: 600 12px/1 var(--vt-barlow);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+}
+
+/* ---------- STATUS DESCRIPTION: the citizen's own words ---------- */
+.vt-status-text {
+  margin: 0;
+  font: 500 14px/1.6 var(--vt-grotesk);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--vt-ink);
+  text-shadow: none;
+}
+
+.vt-status-text a {
+  color: var(--vt-cyan);
+  text-decoration: none;
+}
+
+.vt-status-text a:hover {
+  text-decoration: underline;
+}
+
+.vt-status-text.is-empty {
+  color: var(--vt-ink-3);
+}
+
+/* ---------- Outside Civitas: the sign-in method comes from the outside world ----------
+   Civitas ends here. The land stops at a map border in the emblem's colours; beyond it lies the bare ground,
+   where nothing is glass and nothing is lit. */
+.vt-frontier {
+  position: relative;
+  height: 14px;
+  margin-top: 26px;
+  animation: vt-fade 900ms 700ms ease-out backwards;
+}
+
+.vt-frontier-line {
+  position: absolute;
+  top: 6px;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  height: 1.5px;
+  opacity: 0.55;
+  background: linear-gradient(90deg, var(--vt-green), var(--vt-cyan));
+  -webkit-mask-image:
+    repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 20px, #000 20px 23px, transparent 23px 29px),
+    linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    repeating-linear-gradient(90deg, #000 0 14px, transparent 14px 20px, #000 20px 23px, transparent 23px 29px),
+    linear-gradient(90deg, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+
+.vt-outside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 2px 12px;
+  animation: vt-fade 900ms 820ms ease-out backwards;
+}
+
+.vt-outside-title {
+  margin: 0;
+  font: 600 13px/1 var(--vt-barlow);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+}
+
+.vt-outside-value {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vt-outside-email {
+  font: 500 15px/1.3 var(--vt-grotesk);
+  overflow-wrap: anywhere;
+  color: var(--vt-ink);
+}

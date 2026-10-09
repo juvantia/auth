@@ -1,0 +1,441 @@
+/* Neon Vitrum for Juvantia Auth: the world, the column, words, fields and flat controls.
+   Every class is prefixed `vt-` so nothing reaches the SuperTokens sign-in, which keeps its own look. */
+
+@property --vt-reach {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.vt-root {
+  --vt-world: #040908;
+  --vt-green: #00ff88;
+  --vt-cyan: #00d4ff;
+  --vt-red: #ff4757;
+  --vt-ink: #eef5f2;
+  --vt-ink-2: rgba(238, 245, 242, 0.68);
+  --vt-ink-3: rgba(238, 245, 242, 0.5);
+  --vt-ink-4: rgba(238, 245, 242, 0.26);
+  --vt-hairline: rgba(255, 255, 255, 0.14);
+  --vt-title: var(--font-cinzel), 'Times New Roman', serif;
+  --vt-grotesk: var(--font-grotesk), 'Segoe UI', system-ui, sans-serif;
+  --vt-barlow: var(--font-barlow), 'Arial Narrow', sans-serif;
+  --vt-ease-enter: cubic-bezier(0.16, 0.84, 0.24, 1);
+  --vt-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --vt-ease-glass: cubic-bezier(0.22, 0.72, 0.18, 1);
+  --vt-ease-draw: cubic-bezier(0.65, 0, 0.25, 1);
+  --vt-carrier: 1;
+  --vt-smoke-top: 0.58;
+  --vt-smoke-mid: 0.66;
+  --vt-smoke-foot: 0.72;
+  --vt-key-glow: 0;
+  --vt-key-edge: 0.78;
+  --vt-key-raster: 0.03;
+  --vt-key-raster-dark: 0.065;
+  --vt-icon-ink: #00e9c3;
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  background: var(--vt-world);
+  color: var(--vt-ink);
+  font-family: var(--vt-grotesk);
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+/* The site's old heading and body rules belong to the sign-in; here every element sets its own type. */
+:where(.vt-root) :where(h1, h2, h3, h4, h5, h6, p) {
+  margin: 0;
+  font: inherit;
+  letter-spacing: normal;
+  line-height: inherit;
+  text-transform: none;
+}
+
+:where(.vt-root) :where(button, input, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+.vt-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* ---------- The world: the land, carriers of light, grain and the broadcast raster ---------- */
+.vt-world {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The land ends at Civitas' border, the line above the sign-in method. */
+.vt-world-land {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--vt-frontier, 100000px) - 56px), transparent var(--vt-frontier, 100000px));
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(var(--vt-frontier, 100000px) - 56px), transparent var(--vt-frontier, 100000px));
+}
+
+.vt-relief {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  opacity: 0;
+  transition: opacity 600ms ease;
+}
+
+.vt-relief.is-ready {
+  opacity: 1;
+}
+
+/* Two carriers light the world from beyond the screen: green from the top left, cyan from the bottom right. */
+.vt-carriers {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(95% 52% at -6% -4%, rgba(0, 255, 136, calc(0.13 * var(--vt-carrier))), rgba(0, 255, 136, calc(0.035 * var(--vt-carrier))) 46%, transparent 74%),
+    radial-gradient(92% 50% at 106% 104%, rgba(0, 212, 255, calc(0.12 * var(--vt-carrier))), rgba(0, 212, 255, calc(0.03 * var(--vt-carrier))) 46%, transparent 74%),
+    radial-gradient(60% 30% at 104% 26%, rgba(0, 212, 255, calc(0.035 * var(--vt-carrier))), transparent 70%),
+    radial-gradient(55% 30% at -4% 72%, rgba(0, 255, 136, calc(0.03 * var(--vt-carrier))), transparent 70%);
+}
+
+.vt-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* The broadcast raster over the whole screen: the radio link through which every screen is received. */
+.vt-raster {
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.026) 0 1px, transparent 1px 4px);
+}
+
+/* ---------- The pseudo-mobile column: a phone's width wherever the page opens ---------- */
+.vt-page {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 412px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 6px 16px 40px;
+}
+
+.vt-page--moment {
+  padding-bottom: 22px;
+}
+
+/* ---------- Header: the wordmark exactly as on the Deck and in Citizen ---------- */
+.vt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+  margin-bottom: -4px;
+}
+
+.vt-page--moment .vt-head {
+  justify-content: center;
+}
+
+.vt-brand {
+  font-family: var(--vt-title);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  background: linear-gradient(90deg, var(--vt-green), var(--vt-cyan));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 24px rgba(0, 212, 255, 0.14);
+  animation: vt-fade 900ms 80ms ease-out backwards;
+}
+
+/* ---------- A moment, not a form: the wordmark, the land, and one thing in the middle ----------
+   Nothing to type and nothing to press, so it stands where the eye already is, a little above the centre. */
+.vt-moment-land {
+  flex: 0.86 1 0;
+  min-height: 48px;
+}
+
+.vt-moment-land--after {
+  flex-grow: 1.14;
+}
+
+.vt-foot {
+  margin: 0;
+  text-align: center;
+  font: 500 12.5px/1.45 var(--vt-grotesk);
+  color: var(--vt-ink-3);
+  animation: vt-fade 900ms 600ms ease-out backwards;
+}
+
+/* ---------- Words inside plates ---------- */
+.vt-rise {
+  animation: vt-rise 600ms calc(var(--enter-delay) + var(--at, 320ms)) var(--vt-ease-out) backwards;
+}
+
+.vt-rule {
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--vt-hairline) 10%, var(--vt-hairline) 90%, transparent);
+}
+
+.vt-label {
+  font: 600 10px/1 var(--vt-grotesk);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--vt-ink-3);
+}
+
+.vt-label .vt-mark {
+  color: var(--vt-ink-4);
+}
+
+.vt-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 12px;
+}
+
+.vt-counter {
+  font: 600 12px/1 var(--vt-barlow);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--vt-ink-3);
+  transition: color 200ms ease;
+}
+
+.vt-counter.is-near {
+  color: #ffffff;
+}
+
+.vt-note {
+  margin: 0;
+  font: 500 13px/1.5 var(--vt-grotesk);
+  color: var(--vt-ink-2);
+  text-shadow: none;
+  text-wrap: pretty;
+}
+
+.vt-note--quiet {
+  font-size: 12px;
+  color: var(--vt-ink-3);
+}
+
+.vt-error {
+  margin: 0;
+  font: 500 13px/1.5 var(--vt-grotesk);
+  color: var(--vt-red);
+  text-shadow: none;
+}
+
+.vt-field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- Field: a recess in the glass, darker than the plate; it listens in cyan, the colour of signal ---------- */
+.vt-field {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 58px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(2, 5, 4, 0.55);
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.45);
+  cursor: text;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.vt-field:focus-within {
+  border-color: rgba(0, 212, 255, 0.5);
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.45), inset 0 -1.5px 0 rgba(0, 212, 255, 0.8);
+}
+
+.vt-field.is-invalid,
+.vt-field.is-invalid:focus-within {
+  border-color: rgba(255, 71, 87, 0.6);
+  box-shadow: inset 0 1px 6px rgba(0, 0, 0, 0.45), inset 0 -1.5px 0 rgba(255, 71, 87, 0.7);
+}
+
+.vt-field-input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 30px/1 var(--vt-barlow);
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  caret-color: var(--vt-cyan);
+  outline: none;
+  text-shadow: none;
+}
+
+.vt-field-input::placeholder {
+  font: 500 15px/1 var(--vt-grotesk);
+  letter-spacing: 0;
+  color: var(--vt-ink-4);
+  opacity: 1;
+}
+
+.vt-field--area {
+  height: auto;
+  align-items: stretch;
+  padding: 12px 14px;
+}
+
+.vt-field--area .vt-field-input {
+  min-height: 98px;
+  font: 500 14px/1.55 var(--vt-grotesk);
+  letter-spacing: 0;
+  color: var(--vt-ink);
+  resize: none;
+}
+
+.vt-field--area .vt-field-input::placeholder {
+  font: 500 14px/1.55 var(--vt-grotesk);
+}
+
+/* ---------- Flat control: small actions (edit, cancel, copy, sign out) never behave like the big keys ---------- */
+.vt-flat {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  height: 30px;
+  margin: 0;
+  padding: 0 9px 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #ffffff;
+  font: 600 10.5px/1 var(--vt-grotesk);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 240ms ease, border-color 240ms ease, color 240ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* A larger target than the frame. */
+.vt-flat::before {
+  content: '';
+  position: absolute;
+  inset: -9px -6px;
+}
+
+.vt-flat svg {
+  width: 14px;
+  height: 14px;
+  color: var(--vt-cyan);
+  opacity: 0.8;
+}
+
+.vt-flat:not([aria-disabled="true"]):active {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.08);
+  transition-duration: 100ms;
+}
+
+.vt-flat:focus-visible {
+  outline: 1px solid var(--vt-cyan);
+  outline-offset: 2px;
+}
+
+.vt-flat--exit svg {
+  color: var(--vt-red);
+}
+
+.vt-flat.is-confirmed svg {
+  color: var(--vt-green);
+}
+
+.vt-flat[aria-disabled="true"] {
+  cursor: default;
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.015);
+  color: var(--vt-ink-4);
+}
+
+.vt-flat[aria-disabled="true"] svg {
+  color: var(--vt-ink-4);
+  opacity: 1;
+}
+
+/* ---------- Keyframes ---------- */
+@keyframes vt-fade {
+  from { opacity: 0; }
+}
+
+@keyframes vt-rise {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes vt-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@keyframes vt-flare-fade {
+  0% { opacity: 0; }
+  12%, 30% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes vt-rim-breathe {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Reduced motion: every surface shows its final state; a waiting rim breathes instead of carrying a running light. */
+@media (prefers-reduced-motion: reduce) {
+  .vt-root *,
+  .vt-root *::before,
+  .vt-root *::after {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .vt-root .vt-key.is-busy .vt-key-edge,
+  .vt-root .vt-plate.is-waiting .vt-plate-frame {
+    opacity: 1;
+    animation: vt-rim-breathe 1.6s ease-in-out infinite !important;
+  }
+
+  .vt-root .vt-key-beam,
+  .vt-root .vt-plate-beam,
+  .vt-root .vt-plate-flash {
+    display: none;
+  }
+}

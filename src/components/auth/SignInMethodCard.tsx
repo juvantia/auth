@@ -1,32 +1,26 @@
 'use client';
 
-import React from 'react';
+import './citizen.css';
 
 interface SignInMethodCardProps {
   email?: string | null;
 }
 
+// The sign-in method is the one thing from outside Civitas. The land ends at a map border in the emblem's colours
+// across the whole window (data-frontier), and the email lies beyond it on bare ground: no glass, nothing lit.
 export default function SignInMethodCard({ email }: SignInMethodCardProps) {
   return (
-    <div className="neon-card flex flex-col gap-3">
-      <div className="flex items-center gap-2 mb-1">
-        <div className="w-1 h-4 bg-secondary/60 rounded-full" />
-        <h3 className="font-cinzel text-[11px] uppercase tracking-widest text-text-secondary/70">
-          Sign-In Method
-        </h3>
+    <>
+      <div className="vt-frontier" data-frontier aria-hidden="true">
+        <span className="vt-frontier-line" />
       </div>
-      <div className="flex items-center justify-between bg-surface-container border border-border/10 px-4 py-3 rounded-sm">
-        <div>
-          <p className="font-grotesk text-[9px] uppercase tracking-widest text-text-secondary/40 mb-0.5">Email</p>
-          <p className="font-inter text-[13px] text-text-primary">{email || '—'}</p>
+      <section className="vt-outside" aria-label="Sign-in method, outside Civitas">
+        <h2 className="vt-outside-title">Sign-in method</h2>
+        <div className="vt-outside-value">
+          <span className="vt-label">Email</span>
+          <span className="vt-outside-email">{email || '—'}</span>
         </div>
-        <button
-          disabled
-          className="font-grotesk text-[8px] uppercase tracking-widest text-text-secondary/40 border border-border/20 bg-surface-lowest/50 px-2.5 py-1 rounded-sm opacity-60 cursor-not-allowed select-none"
-        >
-          Change
-        </button>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

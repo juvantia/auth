@@ -5,24 +5,16 @@ import { SessionAuth, useSessionContext } from 'supertokens-auth-react/recipe/se
 import Session from 'supertokens-auth-react/recipe/session';
 import { signOut } from 'supertokens-auth-react/recipe/passwordless';
 
-import RedirectOverlay from '@/components/auth/RedirectOverlay';
+import VitrumRoot from '@/components/vitrum/VitrumRoot';
+import type { KeyOutcome } from '@/components/vitrum/GlassKey';
+import AccessScreen from '@/components/auth/AccessScreen';
+import CitizenHeader from '@/components/auth/CitizenHeader';
 import OnboardingForm from '@/components/auth/OnboardingForm';
 import ProfileCard, { UserProfile } from '@/components/auth/ProfileCard';
 import SignInMethodCard from '@/components/auth/SignInMethodCard';
 import PhaleraCard from '@/components/auth/PhaleraCard';
 import StatusDescriptionCard from '@/components/auth/StatusDescriptionCard';
 import type { PhaleraSlot } from '@/contracts/phalera';
-
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <p className="font-grotesk text-[11px] uppercase tracking-widest text-text-secondary/50 animate-pulse">
-        Authenticating...
-      </p>
-    </div>
-  );
-}
 
 function Dashboard() {
   const session = useSessionContext();
@@ -37,6 +29,12 @@ function Dashboard() {
   const [statusDescription, setStatusDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [invalidField, setInvalidField] = useState<'name' | 'status' | null>(null);
+  const completedProfile = useRef<UserProfile | null>(null);
+
+  // One plate is edited at a time.
+  const [editing, setEditing] = useState<'name' | 'status' | null>(null);
+  const [nativeHandoffFailed, setNativeHandoffFailed] = useState(false);
 
   // Phalera state
   const [phaleraSlots, setPhaleraSlots] = useState<Array<PhaleraSlot | null>>([]);
@@ -90,45 +88,55 @@ function Dashboard() {
     fetchProfile();
   }, [session]);
 
-  const handleOnboardingSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (isSubmitting) return;
-    if (!name.trim()) { setError('Please enter your name.'); return; }
-    if (!statusDescription.trim()) { setError('Please enter your status description.'); return; }
+  // COMPLETE SETUP: checked at once, then the key waits for the answer; the profile opens after its green flash.
+  const handleOnboardingSubmit = (): KeyOutcome | Promise<KeyOutcome> => {
+    if (isSubmitting) return 'invalid';
+    if (!name.trim()) { setError('Please enter your callsign.'); setInvalidField('name'); return 'invalid'; }
+    if (!statusDescription.trim()) { setError('Please enter your status description.'); setInvalidField('status'); return 'invalid'; }
 
     setIsSubmitting(true);
     setError('');
+    setInvalidField(null);
 
-    try {
-      if (!jwt) throw new Error('Authentication session missing. Please refresh the page.');
+    return (async (): Promise<KeyOutcome> => {
+      try {
+        if (!jwt) throw new Error('Authentication session missing. Please refresh the page.');
 
-      const res = await fetch('/api/user/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          name: name.trim(),
-          status_description: statusDescription.trim(),
-        }),
-      });
+        const res = await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            name: name.trim(),
+            status_description: statusDescription.trim(),
+          }),
+        });
 
-      if (res.ok) {
-        const newProfile = await res.json();
-        setProfile(newProfile);
-        setNeedsOnboarding(false);
-      } else {
+        if (res.ok) {
+          completedProfile.current = await res.json();
+          return 'done';
+        }
         const data = await res.json();
         throw new Error(data.message || 'Error occurred during account creation');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Network error');
+        return 'failed';
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Network error');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   };
 
-  const handleUpdateName = async (newName: string) => {
-    if (!profile || !newName.trim()) return;
+  const finishOnboarding = () => {
+    const newProfile = completedProfile.current;
+    if (!newProfile) return;
+    completedProfile.current = null;
+    setProfile(newProfile);
+    setNeedsOnboarding(false);
+  };
+
+  const handleUpdateName = async (newName: string): Promise<KeyOutcome> => {
+    if (!profile || !newName.trim()) return 'invalid';
     try {
       const res = await fetch('/api/user/profile', {
         method: 'POST',
@@ -141,14 +149,17 @@ function Dashboard() {
       if (res.ok) {
         const updated = await res.json();
         setProfile(updated);
+        return 'done';
       }
+      return 'failed';
     } catch (err) {
       console.error("Name update failed", err);
+      return 'failed';
     }
   };
 
-  const handleUpdateDesc = async (newDesc: string) => {
-    if (!profile) return;
+  const handleUpdateDesc = async (newDesc: string): Promise<KeyOutcome> => {
+    if (!profile) return 'invalid';
     try {
       const res = await fetch('/api/user/profile', {
         method: 'POST',
@@ -162,9 +173,12 @@ function Dashboard() {
       if (res.ok) {
         const updated = await res.json();
         setProfile(updated);
+        return 'done';
       }
+      return 'failed';
     } catch (err) {
       console.error("Description update failed", err);
+      return 'failed';
     }
   };
 
@@ -216,6 +230,7 @@ function Dashboard() {
           .catch((error) => {
             console.error('Native authorization failed', error);
             nativeHandoffStarted.current = false;
+            setNativeHandoffFailed(true);
           });
         return;
       }
@@ -257,82 +272,83 @@ function Dashboard() {
     }
   }, [profile, needsOnboarding, jwt]);
 
-  if (session.loading || isLoading) return <LoadingScreen />;
-
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isPopup = urlParams?.get('popup') === 'true';
-  const hasAuthRedirect = urlParams?.get('auth_redirect') !== null;
-  const isRedirecting = isPopup || hasAuthRedirect;
-  const authRedirectValue = urlParams?.get('auth_redirect') || '';
-  const isDeepLink = authRedirectValue.startsWith('juvantia-cockpit://');
+  const hasAuthRedirect = Boolean(urlParams?.has('auth_redirect'));
+  const isNativeHandoff =
+    Boolean(urlParams?.get('native_redirect_uri') && urlParams.get('state') && urlParams.get('code_challenge')) && !nativeHandoffFailed;
+  const isRedirecting = isPopup || hasAuthRedirect || isNativeHandoff;
+  const isAuthenticating = session.loading || isLoading;
+  // One answer for every client that asked: ACCESS GRANTED. A citizen who came on their own gets the profile.
+  const isGranted = !isAuthenticating && isRedirecting && Boolean(profile) && !needsOnboarding;
 
+  if (session.loading || isLoading || isGranted) {
+    return (
+      <VitrumRoot moment screen="access">
+        <AccessScreen granted={isGranted} />
+      </VitrumRoot>
+    );
+  }
+
+  const civitasId = profile?.supertokens_id || (session.doesSessionExist ? session.userId : '');
   const activePhalera = phaleraSlots.find((s) => s && s.id === profile?.active_phalera_id) ?? null;
+  const signOutCitizen = () => {
+    void signOut();
+  };
+
+  if (needsOnboarding) {
+    return (
+      <VitrumRoot moment={false} screen="onboarding">
+        <OnboardingForm
+          name={name}
+          setName={setName}
+          statusDescription={statusDescription}
+          setStatusDescription={setStatusDescription}
+          civitasId={civitasId}
+          onSubmit={handleOnboardingSubmit}
+          onDone={finishOnboarding}
+          onSignOut={signOutCitizen}
+          error={error}
+          invalidField={invalidField}
+        />
+      </VitrumRoot>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
-      <div className="w-full max-w-sm flex flex-col gap-5">
-        <RedirectOverlay
-          isRedirecting={Boolean(isRedirecting && profile && !needsOnboarding)}
-          hasAuthRedirect={hasAuthRedirect}
-          isDeepLink={isDeepLink}
-          authRedirectValue={authRedirectValue}
-          jwt={jwt}
-        />
-
-        <header className="flex items-center justify-between mb-2">
-          <div className="flex flex-col gap-0.5">
-            <h1
-              className="text-xl font-normal uppercase tracking-[0.3em] bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
-              style={{ fontFamily: 'var(--font-cinzel)' }}
-            >
-              Juvantia Auth
-            </h1>
-          </div>
-
-          <button
-            onClick={() => signOut()}
-            className="flex items-center gap-1.5 font-grotesk text-[10px] uppercase tracking-widest text-error/60 hover:text-error border border-error/20 hover:border-error/50 px-3 py-1.5 transition-all duration-300 rounded-sm hover:shadow-[0_0_12px_rgba(255,71,87,0.2)]"
-          >
-            Sign Out
-          </button>
-        </header>
-
-        {needsOnboarding ? (
-          <OnboardingForm
-            name={name}
-            setName={setName}
-            statusDescription={statusDescription}
-            setStatusDescription={setStatusDescription}
-            civitasId={profile?.supertokens_id || (session.doesSessionExist ? session.userId : '')}
-            handleOnboardingSubmit={handleOnboardingSubmit}
-            isSubmitting={isSubmitting}
-            error={error}
+    <VitrumRoot moment={false} screen="profile">
+      <CitizenHeader onSignOut={signOutCitizen} />
+      {profile && (
+        <>
+          <ProfileCard
+            profile={profile}
+            civitasId={civitasId}
+            activePhalera={activePhalera}
+            editing={editing === 'name'}
+            locked={editing === 'status'}
+            onEdit={() => setEditing('name')}
+            onClose={() => setEditing(null)}
+            onUpdateName={handleUpdateName}
           />
-        ) : (
-          profile && (
-            <div className="flex flex-col gap-5">
-              <ProfileCard
-                profile={profile}
-                civitasId={profile?.supertokens_id || (session.doesSessionExist ? session.userId : '')}
-                activePhalera={activePhalera}
-                onUpdateName={handleUpdateName}
-              />
-              <PhaleraCard
-                slots={phaleraSlots}
-                activePhaleraId={profile.active_phalera_id}
-                onSelectPhalera={handleSelectPhalera}
-                isLoading={isPhaleraLoading}
-              />
-              <SignInMethodCard email={profile.email} />
-              <StatusDescriptionCard
-                profile={profile}
-                onUpdateDesc={handleUpdateDesc}
-              />
-            </div>
-          )
-        )}
-      </div>
-    </div>
+          <PhaleraCard
+            slots={phaleraSlots}
+            activePhaleraId={profile.active_phalera_id}
+            onSelectPhalera={handleSelectPhalera}
+            isLoading={isPhaleraLoading}
+          />
+          <StatusDescriptionCard
+            profile={profile}
+            editing={editing === 'status'}
+            locked={editing === 'name'}
+            onEdit={() => setEditing('status')}
+            onClose={() => setEditing(null)}
+            onUpdateDesc={handleUpdateDesc}
+          />
+          {/* The sign-in method comes from outside Civitas, so it lies last, beyond the border. */}
+          <SignInMethodCard email={profile.email} />
+        </>
+      )}
+    </VitrumRoot>
   );
 }
 

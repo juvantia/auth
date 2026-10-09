@@ -1,95 +1,108 @@
 'use client';
 
-import React from 'react';
+import { useRef, type KeyboardEvent } from 'react';
+import { Stamp } from 'lucide-react';
+import Plate from '@/components/vitrum/Plate';
+import GlassKey, { type GlassKeyHandle, type KeyOutcome } from '@/components/vitrum/GlassKey';
+import { CALLSIGN_MAX, STATUS_DESCRIPTION_FIELD_MAX } from '@/contracts/limits';
+import CitizenHeader from './CitizenHeader';
+import { at, focusField } from './fields';
+import './citizen.css';
 
 interface OnboardingFormProps {
   name: string;
-  setName: (name: string) => void;
+  setName: (value: string) => void;
   statusDescription: string;
-  setStatusDescription: (desc: string) => void;
-  civitasId?: string;
-  handleOnboardingSubmit: (e?: React.FormEvent) => void;
-  isSubmitting: boolean;
+  setStatusDescription: (value: string) => void;
+  civitasId: string;
+  onSubmit: () => KeyOutcome | Promise<KeyOutcome>;
+  onDone: () => void;
+  onSignOut: () => void;
   error: string;
+  invalidField: 'name' | 'status' | null;
 }
 
+// A first visit: one plate, CITIZEN REGISTRATION. COMPLETE SETUP waits with the beam.
 export default function OnboardingForm({
   name,
   setName,
   statusDescription,
   setStatusDescription,
   civitasId,
-  handleOnboardingSubmit,
-  isSubmitting,
+  onSubmit,
+  onDone,
+  onSignOut,
   error,
+  invalidField,
 }: OnboardingFormProps) {
+  const key = useRef<GlassKeyHandle>(null);
+
+  const submitOnEnter = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    key.current?.trigger();
+  };
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="neon-card flex flex-col items-center gap-2 py-6 text-center">
-        <p className="font-grotesk text-[10px] uppercase tracking-[0.2em] text-primary">
-          Citizen Registration
-        </p>
-        <p className="font-inter text-[12px] text-text-secondary/60 max-w-xs">
+    <>
+      <CitizenHeader onSignOut={onSignOut} />
+      <Plate title="Citizen registration">
+        <p className="vt-note vt-rise" style={at(320)}>
           Establish your citizen profile in the Juvantia ecosystem.
         </p>
-        {civitasId && (
-          <div className="flex items-center gap-2 px-3 py-1 bg-surface-container/60 border border-border/15 rounded-sm mt-1">
-            <span className="font-grotesk text-[10px] uppercase tracking-wider text-text-secondary/60">
-              Civitas ID:
-            </span>
-            <span className="font-mono text-[11px] text-secondary select-all">
-              {civitasId}
+        <div className="vt-civitas vt-rise" style={at(380)}>
+          <span className="vt-label">Civitas ID</span>
+          <p className="vt-civitas-id">{civitasId}</p>
+        </div>
+        <span className="vt-rule" aria-hidden="true" />
+        <div className="vt-field-block vt-rise" style={at(440)}>
+          <label className="vt-label" htmlFor="vt-reg-name">
+            Callsign <span className="vt-mark">*</span>
+          </label>
+          <div className={invalidField === 'name' ? 'vt-field is-invalid' : 'vt-field'} onPointerDown={focusField}>
+            <input
+              className="vt-field-input"
+              id="vt-reg-name"
+              maxLength={CALLSIGN_MAX}
+              autoComplete="nickname"
+              spellCheck={false}
+              placeholder={`Your callsign (1-${CALLSIGN_MAX} characters)`}
+              value={name}
+              onChange={event => setName(event.target.value)}
+              onKeyDown={submitOnEnter}
+            />
+          </div>
+        </div>
+        <div className="vt-field-block vt-rise" style={at(500)}>
+          <div className="vt-label-row">
+            <label className="vt-label" htmlFor="vt-reg-status">
+              Status description <span className="vt-mark">*</span>
+            </label>
+            <span className={statusDescription.length >= 240 ? 'vt-counter is-near' : 'vt-counter'}>
+              {statusDescription.length}/{STATUS_DESCRIPTION_FIELD_MAX}
             </span>
           </div>
-        )}
-      </div>
-
-      <form onSubmit={handleOnboardingSubmit} className="neon-card flex flex-col gap-4">
-        <div>
-          <label className="neon-label">Citizen Name <span className="text-error">*</span></label>
-          <input
-            type="text"
-            required
-            maxLength={16}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="neon-input"
-            placeholder="YOUR NAME (1-16 CHARACTERS)"
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <label className="neon-label mb-0">Status Description <span className="text-error">*</span></label>
-            <span className="font-grotesk text-[9px] text-text-secondary/40">
-              {statusDescription.length}/250
-            </span>
+          <div className={invalidField === 'status' ? 'vt-field vt-field--area is-invalid' : 'vt-field vt-field--area'} onPointerDown={focusField}>
+            <textarea
+              className="vt-field-input"
+              id="vt-reg-status"
+              maxLength={STATUS_DESCRIPTION_FIELD_MAX}
+              rows={4}
+              placeholder="Tell us about your status, goals, or bio..."
+              value={statusDescription}
+              onChange={event => setStatusDescription(event.target.value)}
+            />
           </div>
-          <textarea
-            required
-            maxLength={250}
-            rows={3}
-            value={statusDescription}
-            onChange={(e) => setStatusDescription(e.target.value)}
-            className="w-full bg-surface-lowest/90 border border-secondary/40 focus:border-secondary focus:ring-1 focus:ring-secondary/30 rounded-sm p-3 text-text-primary font-inter text-[12px] font-normal normal-case tracking-normal leading-relaxed placeholder:text-text-secondary/30 outline-none transition-all resize-y min-h-[75px]"
-            placeholder="Tell us about your status, goals, or bio..."
-          />
         </div>
-
-        {error && (
-          <div className="border border-error/30 bg-error/5 px-4 py-3 rounded-sm font-inter text-[12px] text-error">
+        {error ? (
+          <p className="vt-error" role="alert">
             {error}
-          </div>
-        )}
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="neon-btn-primary w-full py-4 rounded-sm text-[12px] mt-2"
-        >
-          {isSubmitting ? 'Processing...' : 'Complete Setup'}
-        </button>
-      </form>
-    </div>
+          </p>
+        ) : null}
+        <div className="vt-key-slot">
+          <GlassKey handle={key} icon={<Stamp strokeWidth={1.6} aria-hidden />} title="Complete setup" action={onSubmit} onDone={onDone} />
+        </div>
+      </Plate>
+    </>
   );
 }
