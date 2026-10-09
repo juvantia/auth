@@ -29,6 +29,9 @@ export const User = {
     upsertProfile: async (userId: string, update: ProfileUpdate): Promise<IUser> => {
         const existing = await User.findOne({ supertokens_id: userId });
         if (!existing) {
+            if (!update.name) {
+                throw new Error("Name is required to create a profile.");
+            }
             const result = await query<IUser>(
                 `INSERT INTO users
                     (supertokens_id, email, name, status_description, active_phalera_id)
@@ -57,7 +60,7 @@ export const User = {
             [
                 userId,
                 update.email,
-                update.name,
+                update.name !== undefined ? update.name : existing.name,
                 update.status_description !== undefined
                     ? update.status_description
                     : existing.status_description,

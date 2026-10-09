@@ -8,7 +8,10 @@ import { signOut } from 'supertokens-auth-react/recipe/passwordless';
 import RedirectOverlay from '@/components/auth/RedirectOverlay';
 import OnboardingForm from '@/components/auth/OnboardingForm';
 import ProfileCard, { UserProfile } from '@/components/auth/ProfileCard';
+import SignInMethodCard from '@/components/auth/SignInMethodCard';
+import PhaleraCard from '@/components/auth/PhaleraCard';
 import StatusDescriptionCard from '@/components/auth/StatusDescriptionCard';
+import type { PhaleraSlot } from '@/contracts/phalera';
 
 function LoadingScreen() {
   return (
@@ -35,6 +38,27 @@ function Dashboard() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Phalera state
+  const [phaleraSlots, setPhaleraSlots] = useState<Array<PhaleraSlot | null>>([]);
+  const [isPhaleraLoading, setIsPhaleraLoading] = useState(false);
+
+  const fetchPhaleraSlots = async () => {
+    try {
+      setIsPhaleraLoading(true);
+      const res = await fetch('/api/user/phalera/slots', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.slots)) {
+          setPhaleraSlots(data.slots);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch phalera slots', err);
+    } finally {
+      setIsPhaleraLoading(false);
+    }
+  };
+
   useEffect(() => {
     async function fetchProfile() {
       if (!session.loading && session.doesSessionExist) {
@@ -53,6 +77,7 @@ function Dashboard() {
               }
             } else {
               setProfile(data);
+              void fetchPhaleraSlots();
             }
           }
         } catch (err) {
@@ -143,6 +168,26 @@ function Dashboard() {
     }
   };
 
+  const handleSelectPhalera = async (phaleraId: string | null) => {
+    if (!profile) return;
+    const res = await fetch('/api/user/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: profile.name,
+        active_phalera_id: phaleraId,
+      }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setProfile(updated);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.message || 'Failed to update active phalera');
+    }
+  };
+
   useEffect(() => {
     if (profile && !needsOnboarding) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -221,6 +266,8 @@ function Dashboard() {
   const authRedirectValue = urlParams?.get('auth_redirect') || '';
   const isDeepLink = authRedirectValue.startsWith('juvantia-cockpit://');
 
+  const activePhalera = phaleraSlots.find((s) => s && s.id === profile?.active_phalera_id) ?? null;
+
   return (
     <div className="min-h-screen flex flex-col items-center py-10 px-4 bg-background">
       <div className="w-full max-w-sm flex flex-col gap-5">
@@ -267,8 +314,16 @@ function Dashboard() {
               <ProfileCard
                 profile={profile}
                 civitasId={profile?.supertokens_id || (session.doesSessionExist ? session.userId : '')}
+                activePhalera={activePhalera}
                 onUpdateName={handleUpdateName}
               />
+              <PhaleraCard
+                slots={phaleraSlots}
+                activePhaleraId={profile.active_phalera_id}
+                onSelectPhalera={handleSelectPhalera}
+                isLoading={isPhaleraLoading}
+              />
+              <SignInMethodCard email={profile.email} />
               <StatusDescriptionCard
                 profile={profile}
                 onUpdateDesc={handleUpdateDesc}

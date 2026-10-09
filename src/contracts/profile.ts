@@ -3,9 +3,9 @@ import { z } from "zod";
 
 export const ProfileMutationSchema = z
     .object({
-        name: z.string().trim().min(1).max(16),
+        name: z.string().trim().min(1).max(16).optional(),
         status_description: z.string().trim().max(500).optional(),
-        active_phalera_id: z.string().trim().max(64).optional(),
+        active_phalera_id: z.string().trim().max(64).nullable().optional(),
     })
     .strict();
 

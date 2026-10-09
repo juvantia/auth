@@ -42,6 +42,7 @@ async function synchronizeSchema(): Promise<void> {
             )
         `);
         await client.query("ALTER TABLE users ALTER COLUMN status_description DROP DEFAULT");
+        await client.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS active_phalera_id UUID");
         // Legacy schema cleanup: remove username, avatar_url, passkeys, and unused assets table.
         await client.query("ALTER TABLE users DROP COLUMN IF EXISTS username CASCADE");
         await client.query("ALTER TABLE users DROP COLUMN IF EXISTS avatar_url CASCADE");

@@ -145,6 +145,16 @@ export async function POST(request: NextRequest) {
                         return errorResponse(requestId, 409, "SESSION_EMAIL_REQUIRED", "The session has no verified email.");
                     }
 
+                    if (input.active_phalera_id) {
+                        const phaleraCheck = await query(
+                            "SELECT id FROM phaleras WHERE id = $1 AND owner_citizen_id = $2",
+                            [input.active_phalera_id, session.getUserId()]
+                        );
+                        if (phaleraCheck.rows.length === 0) {
+                            return errorResponse(requestId, 400, "INVALID_PHALERA", "The specified Phalera does not exist or does not belong to the citizen.");
+                        }
+                    }
+
                     const walletAddress = await verifiedWalletAddress(session.getUserId());
                     const savedUser = await User.upsertProfile(session.getUserId(), { ...input, email });
                     const response = buildPublicProfileResponse({

@@ -152,4 +152,79 @@ describe("profile mutation route", () => {
         expect(await response.json()).toMatchObject({ success: false, error: { code: "WALLET_BINDING_UNAVAILABLE" } });
         expect(mocks.upsertProfile).not.toHaveBeenCalled();
     });
+
+    it("verifies phalera ownership and saves active_phalera_id", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ id: "phalera-123" }] }); // phalera check
+        mocks.query.mockResolvedValueOnce({ rows: [] }); // wallet binding lookup
+        mocks.upsertProfile.mockResolvedValue({
+            email: "ada@example.test",
+            name: "Ada",
+            status_description: "Citizen",
+            active_phalera_id: "phalera-123",
+        });
+
+        const response = await POST(new NextRequest("https://auth.example.test/api/user/profile", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: "Ada", active_phalera_id: "phalera-123" }),
+        }));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+            name: "Ada",
+            active_phalera_id: "phalera-123",
+        });
+        expect(mocks.upsertProfile).toHaveBeenCalledWith("session-user", {
+            name: "Ada",
+            email: "ada@example.test",
+            active_phalera_id: "phalera-123",
+        });
+    });
+
+    it("rejects an active_phalera_id that does not belong to the citizen", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [] }); // not found or not owned
+
+        const response = await POST(new NextRequest("https://auth.example.test/api/user/profile", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: "Ada", active_phalera_id: "unowned-phalera" }),
+        }));
+
+        expect(response.status).toBe(400);
+        expect(await response.json()).toMatchObject({
+            success: false,
+            error: { code: "INVALID_PHALERA" },
+        });
+        expect(mocks.upsertProfile).not.toHaveBeenCalled();
+    });
+
+    it("allows clearing active_phalera_id by passing null without querying phaleras table", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [] }); // wallet binding lookup
+        mocks.upsertProfile.mockResolvedValue({
+            email: "ada@example.test",
+            name: "Ada",
+            status_description: "Citizen",
+            active_phalera_id: null,
+        });
+
+        const response = await POST(new NextRequest("https://auth.example.test/api/user/profile", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name: "Ada", active_phalera_id: null }),
+        }));
+
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({
+            name: "Ada",
+            active_phalera_id: null,
+        });
+        expect(mocks.upsertProfile).toHaveBeenCalledWith("session-user", {
+            name: "Ada",
+            email: "ada@example.test",
+            active_phalera_id: null,
+        });
+    });
 });

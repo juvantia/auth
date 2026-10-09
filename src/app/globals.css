@@ -89,7 +89,7 @@
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar { width: 3px; height: 4px; }
 ::-webkit-scrollbar-track { background: #0a0f0e; }
-::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.1); border-radius: 9999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,255,136,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(0,255,136,0.15); border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,255,136,0.3); }
