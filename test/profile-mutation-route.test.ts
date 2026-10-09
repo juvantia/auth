@@ -85,6 +85,7 @@ describe("profile mutation route", () => {
         const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
         expect(response.status).toBe(200);
         expect(await response.json()).toEqual({
+            supertokens_id: "session-user",
             email: "ada@example.test",
             name: "Ada",
             smart_wallet_address: null,
@@ -93,6 +94,27 @@ describe("profile mutation route", () => {
         });
         expect(mocks.query.mock.calls[1][0]).toContain("state = 'active'");
         expect(mocks.query.mock.calls[1][1]).toEqual(["session-user", 31337]);
+    });
+
+    it("returns onboarding state without inserting when a user row does not exist", async () => {
+        mocks.getUser.mockResolvedValue({ emails: ["newbie@example.test"] });
+        mocks.query.mockResolvedValueOnce({ rows: [] });
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data).toEqual({
+            needsOnboarding: true,
+            email: "newbie@example.test",
+            supertokens_id: "session-user",
+            user: {
+                name: null,
+                smart_wallet_address: null,
+                status_description: null,
+                active_phalera_id: null,
+            },
+        });
+        const insertCalls = mocks.query.mock.calls.filter((call) => typeof call[0] === "string" && call[0].includes("INSERT"));
+        expect(insertCalls).toHaveLength(0);
     });
 
     it("reads the active proof-gated wallet instead of the legacy profile value", async () => {

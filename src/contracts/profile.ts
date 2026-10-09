@@ -27,12 +27,14 @@ export const OnboardingProfileResponseSchema = z
     .object({
         needsOnboarding: z.literal(true),
         email: z.string().email().nullable(),
+        supertokens_id: z.string().nullable().optional(),
         user: OnboardingUserSchema,
     })
     .strict();
 
 export const CompleteProfileResponseSchema = z
     .object({
+        supertokens_id: z.string().nullable().optional(),
         name: z.string().min(1).max(16),
         email: z.string().email().nullable(),
         smart_wallet_address: NullableWalletAddressSchema,
@@ -48,6 +50,7 @@ export const PublicProfileResponseSchema = z.union([
 
 export interface PublicProfileSource {
     [key: string]: unknown;
+    supertokens_id?: unknown;
     name?: unknown;
     email?: unknown;
     smart_wallet_address?: unknown;
@@ -68,17 +71,23 @@ function publicWalletAddress(value: unknown): string | null {
     }
 }
 
-export function buildPublicProfileResponse(source: PublicProfileSource, sessionEmail?: string) {
+export function buildPublicProfileResponse(
+    source: PublicProfileSource,
+    sessionEmail?: string,
+    supertokensId?: string,
+) {
     const name = nullableString(source.name);
     const walletAddress = publicWalletAddress(source.smart_wallet_address);
     const statusDescription = nullableString(source.status_description);
     const activePhaleraId = nullableString(source.active_phalera_id);
     const email = nullableString(source.email) ?? nullableString(sessionEmail);
+    const civitasId = nullableString(source.supertokens_id) ?? nullableString(supertokensId);
 
     if (!name) {
         return OnboardingProfileResponseSchema.parse({
             needsOnboarding: true,
             email,
+            supertokens_id: civitasId,
             user: {
                 name,
                 smart_wallet_address: walletAddress,
@@ -89,6 +98,7 @@ export function buildPublicProfileResponse(source: PublicProfileSource, sessionE
     }
 
     return CompleteProfileResponseSchema.parse({
+        supertokens_id: civitasId,
         name,
         email,
         smart_wallet_address: walletAddress,

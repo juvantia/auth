@@ -31,6 +31,7 @@ function Dashboard() {
 
   // Onboarding state
   const [name, setName] = useState('');
+  const [statusDescription, setStatusDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,6 +49,7 @@ function Dashboard() {
               setNeedsOnboarding(true);
               if (data.user) {
                 setName(data.user.name || '');
+                setStatusDescription(data.user.status_description || '');
               }
             } else {
               setProfile(data);
@@ -67,6 +69,7 @@ function Dashboard() {
     if (e) e.preventDefault();
     if (isSubmitting) return;
     if (!name.trim()) { setError('Please enter your name.'); return; }
+    if (!statusDescription.trim()) { setError('Please enter your status description.'); return; }
 
     setIsSubmitting(true);
     setError('');
@@ -78,7 +81,10 @@ function Dashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ 
+          name: name.trim(),
+          status_description: statusDescription.trim(),
+        }),
       });
 
       if (res.ok) {
@@ -248,6 +254,9 @@ function Dashboard() {
           <OnboardingForm
             name={name}
             setName={setName}
+            statusDescription={statusDescription}
+            setStatusDescription={setStatusDescription}
+            civitasId={profile?.supertokens_id || (session.doesSessionExist ? session.userId : '')}
             handleOnboardingSubmit={handleOnboardingSubmit}
             isSubmitting={isSubmitting}
             error={error}
@@ -257,6 +266,7 @@ function Dashboard() {
             <div className="flex flex-col gap-5">
               <ProfileCard
                 profile={profile}
+                civitasId={profile?.supertokens_id || (session.doesSessionExist ? session.userId : '')}
                 onUpdateName={handleUpdateName}
               />
               <StatusDescriptionCard

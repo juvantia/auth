@@ -50,26 +50,42 @@ async function getProfileByUserId(userId: string, requestId: string) {
              FROM users WHERE supertokens_id = $1`,
             [userId],
         );
-        let user = result.rows[0];
+        const user = result.rows[0];
         const userInfo = await supertokens.getUser(userId);
         const sessionEmail = userInfo?.emails[0];
 
-        if (!user && sessionEmail) {
-            const insertResult = await query<ProfileRow>(
-                `INSERT INTO users (supertokens_id, email, name)
-                 VALUES ($1, $2, $3)
-                 RETURNING email, name, status_description, active_phalera_id`,
-                [userId, sessionEmail, sessionEmail.split("@")[0]],
-            );
-            user = insertResult.rows[0];
-        }
         if (!user) {
-            return errorResponse(requestId, 404, "PROFILE_NOT_FOUND", "The citizen profile was not found.");
+            if (!sessionEmail) {
+                return errorResponse(requestId, 404, "PROFILE_NOT_FOUND", "The citizen profile was not found.");
+            }
+            return rawProfileResponse(
+                requestId,
+                buildPublicProfileResponse(
+                    {
+                        supertokens_id: userId,
+                        name: null,
+                        status_description: null,
+                        active_phalera_id: null,
+                        smart_wallet_address: null,
+                    },
+                    sessionEmail,
+                    userId,
+                ),
+            );
         }
 
-        return rawProfileResponse(requestId, buildPublicProfileResponse({
-            ...user, smart_wallet_address: await verifiedWalletAddress(userId),
-        }, sessionEmail));
+        return rawProfileResponse(
+            requestId,
+            buildPublicProfileResponse(
+                {
+                    ...user,
+                    supertokens_id: userId,
+                    smart_wallet_address: await verifiedWalletAddress(userId),
+                },
+                sessionEmail,
+                userId,
+            ),
+        );
     } catch (error) {
         if (error instanceof WalletBindingUnavailable) return walletBindingError(requestId);
         console.error("getProfileByUserId failed:", error);
@@ -132,12 +148,13 @@ export async function POST(request: NextRequest) {
                     const walletAddress = await verifiedWalletAddress(session.getUserId());
                     const savedUser = await User.upsertProfile(session.getUserId(), { ...input, email });
                     const response = buildPublicProfileResponse({
+                        supertokens_id: session.getUserId(),
                         email: savedUser.email,
                         name: savedUser.name,
                         smart_wallet_address: walletAddress,
                         status_description: savedUser.status_description,
                         active_phalera_id: savedUser.active_phalera_id,
-                    }, email);
+                    }, email, session.getUserId());
                     return rawProfileResponse(requestId, response, 200);
                 } catch (error) {
                     return profileMutationError(requestId, error);

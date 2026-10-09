@@ -58,13 +58,13 @@ describe("sanitized profile read model", () => {
         });
 
         expect(result).toEqual({
+            supertokens_id: "internal-user-id",
             email: "ada@example.test",
             name: "Ada",
             smart_wallet_address: ADDRESS,
             status_description: "Citizen",
             active_phalera_id: null,
         });
-        expect(JSON.stringify(result)).not.toContain("supertokens_id");
         expect(JSON.stringify(result)).not.toContain("legacy_user");
         expect(JSON.stringify(result)).not.toContain("legacy.png");
         expect(JSON.stringify(result)).not.toContain("passkeys");
@@ -79,6 +79,7 @@ describe("sanitized profile read model", () => {
         });
 
         expect(result).toEqual({
+            supertokens_id: null,
             email: "ada@example.test",
             name: "Ada",
             smart_wallet_address: null,

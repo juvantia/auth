@@ -13,15 +13,18 @@ export interface UserProfile {
 
 interface ProfileCardProps {
   profile: UserProfile;
+  civitasId?: string;
   onUpdateName: (newName: string) => Promise<void>;
 }
 
 export default function ProfileCard({
   profile,
+  civitasId: propCivitasId,
   onUpdateName,
 }: ProfileCardProps) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const handleSaveName = async () => {
     if (!newName.trim()) return;
@@ -29,46 +32,51 @@ export default function ProfileCard({
     setIsEditingName(false);
   };
 
-  const civitasId = profile.supertokens_id || profile._id || '';
+  const civitasId = profile.supertokens_id || profile._id || propCivitasId || '';
+
+  const handleCopyCivitasId = async () => {
+    if (!civitasId) return;
+    try {
+      await navigator.clipboard.writeText(civitasId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  };
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="neon-card flex flex-col items-center gap-4 py-8 relative overflow-visible">
-        <p className="absolute top-4 left-4 font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/25">
+      <div className="neon-card flex flex-col items-center gap-4 py-8 relative overflow-visible text-center">
+        <p className="font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/30">
           Citizen Profile
         </p>
 
-        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
-          <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile.name?.charAt(0).toUpperCase() || '?'}</span>
-        </div>
-
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-center gap-2 w-full">
           {isEditingName ? (
-            <div className="flex items-center gap-1.5 mt-1">
+            <div className="flex items-center justify-center gap-1.5 mt-1">
               <input
                 type="text"
                 maxLength={16}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-40 bg-surface-lowest/90 border border-secondary/40 focus:border-secondary focus:ring-1 focus:ring-secondary/30 rounded-sm py-1 px-2 text-sm text-center text-text-primary font-cinzel font-semibold uppercase tracking-wider outline-none transition-all"
+                className="w-44 bg-surface-lowest/90 border border-secondary/40 focus:border-secondary focus:ring-1 focus:ring-secondary/30 rounded-sm py-1.5 px-3 text-sm text-center text-text-primary font-cinzel font-semibold uppercase tracking-wider outline-none transition-all"
                 placeholder="NAME (MAX 16)"
               />
               <button
                 onClick={handleSaveName}
-                className="px-2.5 py-1 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
+                className="px-2.5 py-1.5 border border-primary/50 hover:border-primary bg-primary/10 hover:bg-primary/20 text-primary text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
               >
                 Save
               </button>
               <button
                 onClick={() => setIsEditingName(false)}
-                className="px-2.5 py-1 border border-error/50 hover:border-error bg-error/10 hover:bg-error/20 text-error text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
+                className="px-2.5 py-1.5 border border-error/50 hover:border-error bg-error/10 hover:bg-error/20 text-error text-[9px] font-grotesk font-bold uppercase tracking-wider transition-all rounded-sm"
               >
                 Cancel
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-semibold uppercase tracking-widest text-[#E6F0EB]" style={{ fontFamily: 'var(--font-cinzel)' }}>
+            <div className="flex items-center justify-center gap-2">
+              <h2 className="text-2xl font-semibold uppercase tracking-widest text-[#E6F0EB]" style={{ fontFamily: 'var(--font-cinzel)' }}>
                 {profile.name}
               </h2>
               <button
@@ -84,9 +92,22 @@ export default function ProfileCard({
           )}
 
           {civitasId && (
-            <p className="font-grotesk text-[11px] font-medium tracking-wider text-text-secondary/70">
-              Civitas ID: <span className="text-secondary select-all">{civitasId}</span>
-            </p>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container/60 border border-border/15 rounded-sm mt-1">
+              <span className="font-grotesk text-[10px] uppercase tracking-wider text-text-secondary/60">
+                Civitas ID:
+              </span>
+              <span className="font-mono text-[11px] text-secondary select-all">
+                {civitasId}
+              </span>
+              <button
+                type="button"
+                onClick={handleCopyCivitasId}
+                title="Copy Civitas ID"
+                className="font-grotesk text-[9px] uppercase tracking-wider text-text-secondary/50 hover:text-primary transition-colors ml-1"
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
           )}
         </div>
       </div>
