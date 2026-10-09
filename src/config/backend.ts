@@ -101,8 +101,6 @@ export const backendConfig = (): TypeInput => {
                             createNewSession: async function (input) {
                                 let email = undefined;
                                 let name = undefined;
-                                let username = undefined;
-                                let avatar_url = undefined;
 
                                 try {
                                     const user = await supertokens.getUser(input.userId);
@@ -111,11 +109,9 @@ export const backendConfig = (): TypeInput => {
                                     }
 
                                     // Fetch profile from PostgreSQL
-                                    const result = await query("SELECT name, username, avatar_url FROM users WHERE supertokens_id = $1", [input.userId]);
+                                    const result = await query("SELECT name FROM users WHERE supertokens_id = $1", [input.userId]);
                                     if (result.rows.length > 0) {
                                         name = result.rows[0].name;
-                                        username = result.rows[0].username;
-                                        avatar_url = result.rows[0].avatar_url;
                                     }
                                 } catch (err) {
                                     console.error("Juvantia Auth: Error fetching user in createNewSession", err);
@@ -124,7 +120,7 @@ export const backendConfig = (): TypeInput => {
                                 input.accessTokenPayload = {
                                     ...input.accessTokenPayload,
                                     name,
-                                    username
+                                    supertokens_id: input.userId,
                                 };
 
                                 if (email) {

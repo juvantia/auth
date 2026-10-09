@@ -31,8 +31,6 @@ function Dashboard() {
 
   // Onboarding state
   const [name, setName] = useState('');
-  const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -50,8 +48,6 @@ function Dashboard() {
               setNeedsOnboarding(true);
               if (data.user) {
                 setName(data.user.name || '');
-                setUsername(data.user.username || '');
-                setAvatarUrl(data.user.avatar_url || '');
               }
             } else {
               setProfile(data);
@@ -70,8 +66,7 @@ function Dashboard() {
   const handleOnboardingSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (isSubmitting) return;
-    if (!name || !username) { setError('Please fill in all required fields.'); return; }
-    if (username.length < 5) { setError('Username must be at least 5 characters long.'); return; }
+    if (!name.trim()) { setError('Please enter your name.'); return; }
 
     setIsSubmitting(true);
     setError('');
@@ -83,7 +78,7 @@ function Dashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ name, username, avatar_url: avatarUrl || undefined }),
+        body: JSON.stringify({ name: name.trim() }),
       });
 
       if (res.ok) {
@@ -94,41 +89,11 @@ function Dashboard() {
         const data = await res.json();
         throw new Error(data.message || 'Error occurred during account creation');
       }
-    } catch (err: any) {
-      setError(err.message || 'Network error');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Network error');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const size = 256;
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const minSide = Math.min(img.width, img.height);
-        const sx = (img.width - minSide) / 2;
-        const sy = (img.height - minSide) / 2;
-        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        
-        if (needsOnboarding) {
-          setAvatarUrl(dataUrl);
-        } else {
-          handleUpdateAvatar(dataUrl);
-        }
-      };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleUpdateName = async (newName: string) => {
@@ -139,9 +104,7 @@ function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ 
-          name: newName, 
-          username: profile.username, 
-          avatar_url: profile.avatar_url 
+          name: newName.trim(),
         }),
       });
       if (res.ok) {
@@ -150,28 +113,6 @@ function Dashboard() {
       }
     } catch (err) {
       console.error("Name update failed", err);
-    }
-  };
-
-  const handleUpdateAvatar = async (newUrl: string) => {
-    if (!profile) return;
-    try {
-      const res = await fetch('/api/user/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          name: profile.name, 
-          username: profile.username, 
-          avatar_url: newUrl 
-        }),
-      });
-      if (res.ok) {
-        const updated = await res.json();
-        setProfile(updated);
-      }
-    } catch (err) {
-      console.error("Avatar update failed", err);
     }
   };
 
@@ -184,8 +125,6 @@ function Dashboard() {
         credentials: 'include',
         body: JSON.stringify({ 
           name: profile.name, 
-          username: profile.username, 
-          avatar_url: profile.avatar_url,
           status_description: newDesc
         }),
       });
@@ -309,11 +248,6 @@ function Dashboard() {
           <OnboardingForm
             name={name}
             setName={setName}
-            username={username}
-            setUsername={setUsername}
-            avatarUrl={avatarUrl}
-            setAvatarUrl={setAvatarUrl}
-            handleImageUpload={handleImageUpload}
             handleOnboardingSubmit={handleOnboardingSubmit}
             isSubmitting={isSubmitting}
             error={error}
@@ -323,7 +257,6 @@ function Dashboard() {
             <div className="flex flex-col gap-5">
               <ProfileCard
                 profile={profile}
-                handleImageUpload={handleImageUpload}
                 onUpdateName={handleUpdateName}
               />
               <StatusDescriptionCard

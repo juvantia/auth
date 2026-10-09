@@ -44,7 +44,6 @@ describe("profile mutation route", () => {
                 headers: { "content-type": "application/json", "x-request-id": "profile-mutation-test" },
                 body: JSON.stringify({
                     name: "Ada",
-                    username: "ada_user",
                     smart_wallet_address: "0x1111111111111111111111111111111111111111",
                 }),
             }),
@@ -61,9 +60,26 @@ describe("profile mutation route", () => {
         expect(mocks.upsertProfile).not.toHaveBeenCalled();
     });
 
+    it("rejects legacy username and avatar_url in mutation body", async () => {
+        const response = await POST(
+            new NextRequest("https://auth.example.test/api/user/profile", {
+                method: "POST",
+                headers: { "content-type": "application/json", "x-request-id": "profile-mutation-test" },
+                body: JSON.stringify({
+                    name: "Ada",
+                    username: "ada_user",
+                    avatar_url: "/uploads/ada.png",
+                }),
+            }),
+        );
+
+        expect(response.status).toBe(400);
+        expect(mocks.upsertProfile).not.toHaveBeenCalled();
+    });
+
     it("does not promote an unverified legacy address to a ZeroDev wallet", async () => {
         mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
-        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user",
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada",
             smart_wallet_address: "0x1111111111111111111111111111111111111111" }] });
         mocks.query.mockResolvedValueOnce({ rows: [] });
         const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
@@ -71,10 +87,9 @@ describe("profile mutation route", () => {
         expect(await response.json()).toEqual({
             email: "ada@example.test",
             name: "Ada",
-            username: "ada_user",
-            avatar_url: null,
             smart_wallet_address: null,
             status_description: null,
+            active_phalera_id: null,
         });
         expect(mocks.query.mock.calls[1][0]).toContain("state = 'active'");
         expect(mocks.query.mock.calls[1][1]).toEqual(["session-user", 31337]);
@@ -83,16 +98,17 @@ describe("profile mutation route", () => {
     it("reads the active proof-gated wallet instead of the legacy profile value", async () => {
         const provenAddress = "0x2222222222222222222222222222222222222222";
         mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
-        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user",
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada",
             smart_wallet_address: "0x1111111111111111111111111111111111111111" }] });
         mocks.query.mockResolvedValueOnce({ rows: [{ address: provenAddress }] });
         const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
         expect(response.status).toBe(200);
         expect(await response.json()).toMatchObject({ smart_wallet_address: provenAddress });
     });
+
     it("returns an unavailable error when the wallet lookup fails, instead of an unlinked profile", async () => {
         mocks.getUser.mockResolvedValue({ emails: ["ada@example.test"] });
-        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada", username: "ada_user" }] });
+        mocks.query.mockResolvedValueOnce({ rows: [{ email: "ada@example.test", name: "Ada" }] });
         mocks.query.mockRejectedValueOnce(new Error("private database details"));
         const response = await GET(new NextRequest("https://auth.example.test/api/user/profile"));
         expect(response.status).toBe(503);
@@ -108,11 +124,10 @@ describe("profile mutation route", () => {
         mocks.query.mockRejectedValueOnce(new Error("database unavailable"));
         const response = await POST(new NextRequest("https://auth.example.test/api/user/profile", {
             method: "POST", headers: { "content-type": "application/json" },
-            body: JSON.stringify({ name: "Ada", username: "ada_user", status_description: "My biography" }),
+            body: JSON.stringify({ name: "Ada", status_description: "My biography" }),
         }));
         expect(response.status).toBe(503);
         expect(await response.json()).toMatchObject({ success: false, error: { code: "WALLET_BINDING_UNAVAILABLE" } });
         expect(mocks.upsertProfile).not.toHaveBeenCalled();
     });
-
 });

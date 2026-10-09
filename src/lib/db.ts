@@ -34,8 +34,6 @@ async function synchronizeSchema(): Promise<void> {
                 supertokens_id VARCHAR(255) PRIMARY KEY,
                 email VARCHAR(255) UNIQUE NOT NULL,
                 name VARCHAR(255) NOT NULL,
-                username VARCHAR(255) UNIQUE,
-                avatar_url TEXT,
                 smart_wallet_address VARCHAR(255) UNIQUE,
                 status VARCHAR(50) DEFAULT 'citizen',
                 status_description TEXT,
@@ -44,10 +42,11 @@ async function synchronizeSchema(): Promise<void> {
             )
         `);
         await client.query("ALTER TABLE users ALTER COLUMN status_description DROP DEFAULT");
-        // Legacy schema cleanup only; Auth never stores or reads passkey material.
-        await client.query(`
-            ALTER TABLE users DROP COLUMN IF EXISTS passkeys
-        `);
+        // Legacy schema cleanup: remove username, avatar_url, passkeys, and unused assets table.
+        await client.query("ALTER TABLE users DROP COLUMN IF EXISTS username CASCADE");
+        await client.query("ALTER TABLE users DROP COLUMN IF EXISTS avatar_url CASCADE");
+        await client.query("ALTER TABLE users DROP COLUMN IF EXISTS passkeys CASCADE");
+        await client.query("DROP TABLE IF EXISTS assets CASCADE");
         await client.query(`
             CREATE UNIQUE INDEX IF NOT EXISTS users_smart_wallet_address_ci_unique
             ON users (LOWER(smart_wallet_address))

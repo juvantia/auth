@@ -4,23 +4,31 @@ import { ProfileMutationSchema, buildPublicProfileResponse } from "@/contracts/p
 const ADDRESS = "0x1111111111111111111111111111111111111111";
 
 describe("profile mutation contract", () => {
-    it("accepts only public profile fields and normalizes the username", () => {
+    it("accepts only public profile fields (name up to 16 chars, status_description, active_phalera_id)", () => {
         const result = ProfileMutationSchema.parse({
             name: "  Ada Lovelace  ",
-            username: "Ada_User",
-            avatar_url: "/uploads/avatar.png",
             status_description: "Citizen",
+            active_phalera_id: "PHL-001",
         });
 
         expect(result).toEqual({
             name: "Ada Lovelace",
-            username: "ada_user",
-            avatar_url: "/uploads/avatar.png",
             status_description: "Citizen",
+            active_phalera_id: "PHL-001",
         });
     });
 
+    it("rejects names longer than 16 characters", () => {
+        const result = ProfileMutationSchema.safeParse({
+            name: "This Name Is Way Too Long For A Citizen",
+        });
+        expect(result.success).toBe(false);
+    });
+
     it.each([
+        "username",
+        "avatar_url",
+        "avatarUrl",
         "smart_wallet_address",
         "smartWalletAddress",
         "passkey",
@@ -30,7 +38,6 @@ describe("profile mutation contract", () => {
     ])("rejects forbidden mutation field %s", (field) => {
         const result = ProfileMutationSchema.safeParse({
             name: "Ada",
-            username: "ada_user",
             [field]: "untrusted-client-material",
         });
         expect(result.success).toBe(false);
@@ -38,13 +45,13 @@ describe("profile mutation contract", () => {
 });
 
 describe("sanitized profile read model", () => {
-    it("returns a verified wallet but excludes internal identity and credential fields", () => {
+    it("returns a verified wallet but excludes internal identity and credential fields, username, and avatar", () => {
         const result = buildPublicProfileResponse({
             supertokens_id: "internal-user-id",
             email: "ada@example.test",
             name: "Ada",
-            username: "ada_user",
-            avatar_url: null,
+            username: "legacy_user",
+            avatar_url: "/uploads/legacy.png",
             smart_wallet_address: ADDRESS,
             passkeys: ["credential-material"],
             status_description: "Citizen",
@@ -53,12 +60,13 @@ describe("sanitized profile read model", () => {
         expect(result).toEqual({
             email: "ada@example.test",
             name: "Ada",
-            username: "ada_user",
-            avatar_url: null,
             smart_wallet_address: ADDRESS,
             status_description: "Citizen",
+            active_phalera_id: null,
         });
         expect(JSON.stringify(result)).not.toContain("supertokens_id");
+        expect(JSON.stringify(result)).not.toContain("legacy_user");
+        expect(JSON.stringify(result)).not.toContain("legacy.png");
         expect(JSON.stringify(result)).not.toContain("passkeys");
         expect(JSON.stringify(result)).not.toContain("credential-material");
     });
@@ -67,25 +75,22 @@ describe("sanitized profile read model", () => {
         const result = buildPublicProfileResponse({
             email: "ada@example.test",
             name: "Ada",
-            username: "ada_user",
             smart_wallet_address: "not-an-address",
         });
 
         expect(result).toEqual({
             email: "ada@example.test",
             name: "Ada",
-            username: "ada_user",
-            avatar_url: null,
             smart_wallet_address: null,
             status_description: null,
+            active_phalera_id: null,
         });
     });
 
-    it("returns onboarding state when name or username is missing", () => {
+    it("returns onboarding state when name is missing", () => {
         const result = buildPublicProfileResponse({
             email: "ada@example.test",
             name: null,
-            username: null,
         });
 
         expect(result).toMatchObject({
@@ -93,7 +98,6 @@ describe("sanitized profile read model", () => {
             email: "ada@example.test",
             user: {
                 name: null,
-                username: null,
                 smart_wallet_address: null,
             },
         });

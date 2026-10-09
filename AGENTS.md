@@ -10,10 +10,10 @@
 ## 1. Architectural Role and Trust Boundaries
 
 1. **SSO and Citizen Identification**:
-   - `auth` owns SuperTokens accounts, verified email addresses, and public citizen profile data (`name`, `username`, `avatar_url`, `status_description`). Core owns business status and qualifications.
+   - `auth` owns SuperTokens accounts, verified email addresses, and public citizen profile data (`name`, `status_description`, `active_phalera_id`). Core owns business status and qualifications.
    - Citizen identification on protected endpoints MUST be performed strictly via verified SuperTokens sessions (`withSession`).
    - Decoded JWT payloads or arbitrary Bearer tokens without cryptographic session verification MUST be rejected (`401 Unauthorized`).
-   - The service NEVER discloses `supertokens_id`, internal database errors, RPC errors, or environment variable values to the client.
+   - The service NEVER discloses internal database errors, RPC errors, or environment variable values to the client.
 
 2. **Prohibition of Arbitrary Wallet Binding**:
    - Wallet addresses MUST NOT be accepted as incoming profile fields under any circumstances.
@@ -39,9 +39,8 @@
 | Endpoint | Method | Authorization | Description and Contract |
 | :--- | :--- | :--- | :--- |
 | `/api/auth/*` | SuperTokens methods | Public / Session | Email OTP login, session refresh, logout, SuperTokens core protocol. |
-| `/api/user/profile` | `GET` | Session required | Reads citizen profile and verified smart account address (`wallet_bindings`). Returns `needsOnboarding: true` if name or username is unset; an absent active smart account is valid. |
-| `/api/user/profile` | `POST` | Session required | Strict DTO: `name`, `username`, `avatar_url?`, `status_description?`. Any wallet, password, or role fields are rejected with a validation error. |
-| `/api/user/upload` | `POST` | Session required | Avatar upload (multipart `file`). Only JPG, PNG, and WebP up to 5 MB are allowed. Verifies file signature (magic bytes) and generates a random filename. Executable files and SVG are strictly rejected. |
+| `/api/user/profile` | `GET` | Session required | Reads citizen profile and verified smart account address (`wallet_bindings`). Returns `needsOnboarding: true` if name is unset; an absent active smart account is valid. |
+| `/api/user/profile` | `POST` | Session required | Strict DTO: `name` (1-16 chars), `status_description?`, `active_phalera_id?`. Any unauthorized fields, wallet, password, or role fields are rejected with a validation error. Legacy `username` and `avatar_url` are completely removed. |
 
 ---
 
@@ -52,7 +51,7 @@ Profile descriptions are authored only by the citizen. Missing descriptions rema
 `auth` connects to the shared PostgreSQL cluster (`postgres-shared`):
 - `supertokens` database: maintained directly by the `supertokens` service (SuperTokens schema).
 - `juvantia` database:
-  - `users` table: public citizen profiles (`supertokens_id`, `email`, `name`, `username`, `avatar_url`, `status`, `status_description`, `smart_wallet_address` as read-side compatibility).
+  - `users` table: public citizen profiles (`supertokens_id`, `email`, `name`, `status`, `status_description`, `smart_wallet_address` as read-side compatibility). Legacy `username` and `avatar_url` columns are permanently dropped.
   - `wallet_bindings` table: source of truth for the smart account address (`state = 'active'`, `chain_id = BLOCKCHAIN_CHAIN_ID`).
 
 ---

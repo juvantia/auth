@@ -18,10 +18,9 @@ ensureSuperTokensInitialized();
 interface ProfileRow extends Record<string, unknown> {
     email: string;
     name: string;
-    username: string | null;
-    avatar_url: string | null;
     smart_wallet_address: string | null;
     status_description: string | null;
+    active_phalera_id: string | null;
 }
 
 function rawProfileResponse(requestId: string, data: unknown, status: 200 | 201 = 200) {
@@ -47,7 +46,7 @@ async function verifiedWalletAddress(userId: string): Promise<string | null> {
 async function getProfileByUserId(userId: string, requestId: string) {
     try {
         const result = await query<ProfileRow>(
-            `SELECT email, name, username, avatar_url, status_description
+            `SELECT email, name, status_description, active_phalera_id
              FROM users WHERE supertokens_id = $1`,
             [userId],
         );
@@ -59,7 +58,7 @@ async function getProfileByUserId(userId: string, requestId: string) {
             const insertResult = await query<ProfileRow>(
                 `INSERT INTO users (supertokens_id, email, name)
                  VALUES ($1, $2, $3)
-                 RETURNING email, name, username, avatar_url, status_description`,
+                 RETURNING email, name, status_description, active_phalera_id`,
                 [userId, sessionEmail, sessionEmail.split("@")[0]],
             );
             user = insertResult.rows[0];
@@ -89,9 +88,6 @@ function profileMutationError(requestId: string, error: unknown) {
     }
     if (error instanceof z.ZodError) {
         return errorResponse(requestId, 502, "PROFILE_CONTRACT_MISMATCH", "The profile response is invalid.");
-    }
-    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
-        return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
     }
     console.error("profileMutationError unhandled error:", error);
     return errorResponse(requestId, 500, "INTERNAL_ERROR", "The auth service could not update the profile.");
@@ -133,20 +129,14 @@ export async function POST(request: NextRequest) {
                         return errorResponse(requestId, 409, "SESSION_EMAIL_REQUIRED", "The session has no verified email.");
                     }
 
-                    const existingUsername = await User.findOne({ username: input.username });
-                    if (existingUsername && existingUsername.supertokens_id !== session.getUserId()) {
-                        return errorResponse(requestId, 409, "USERNAME_UNAVAILABLE", "The username is already in use.");
-                    }
-
                     const walletAddress = await verifiedWalletAddress(session.getUserId());
                     const savedUser = await User.upsertProfile(session.getUserId(), { ...input, email });
                     const response = buildPublicProfileResponse({
                         email: savedUser.email,
                         name: savedUser.name,
-                        username: savedUser.username,
-                        avatar_url: savedUser.avatar_url,
                         smart_wallet_address: walletAddress,
                         status_description: savedUser.status_description,
+                        active_phalera_id: savedUser.active_phalera_id,
                     }, email);
                     return rawProfileResponse(requestId, response, 200);
                 } catch (error) {

@@ -6,22 +6,18 @@ export interface UserProfile {
   _id?: string;
   supertokens_id?: string;
   name: string;
-  username: string;
   email?: string;
-  avatar_url?: string;
   smart_wallet_address?: string;
   status_description?: string;
 }
 
 interface ProfileCardProps {
   profile: UserProfile;
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onUpdateName: (newName: string) => Promise<void>;
 }
 
 export default function ProfileCard({
   profile,
-  handleImageUpload,
   onUpdateName,
 }: ProfileCardProps) {
   const [isEditingName, setIsEditingName] = useState(false);
@@ -29,28 +25,21 @@ export default function ProfileCard({
 
   const handleSaveName = async () => {
     if (!newName.trim()) return;
-    await onUpdateName(newName);
+    await onUpdateName(newName.trim());
     setIsEditingName(false);
   };
+
+  const civitasId = profile.supertokens_id || profile._id || '';
 
   return (
     <div className="flex flex-col gap-5">
       <div className="neon-card flex flex-col items-center gap-4 py-8 relative overflow-visible">
         <p className="absolute top-4 left-4 font-grotesk text-[9px] uppercase tracking-[0.2em] text-text-secondary/25">
-          Profile
+          Citizen Profile
         </p>
-        <div className="relative">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile.name?.charAt(0).toUpperCase()}</span>
-            )}
-          </div>
-          <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-surface-high border border-border/30 rounded-full flex items-center justify-center cursor-pointer hover:border-primary/40 transition-all group shadow-lg">
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-            +
-          </label>
+
+        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-3xl font-bold text-surface-low border-4 border-surface-high overflow-hidden shadow-[0_0_30px_rgba(0,255,136,0.15)]">
+          <span style={{ fontFamily: 'var(--font-cinzel)' }}>{profile.name?.charAt(0).toUpperCase() || '?'}</span>
         </div>
 
         <div className="flex flex-col items-center gap-1">
@@ -58,11 +47,11 @@ export default function ProfileCard({
             <div className="flex items-center gap-1.5 mt-1">
               <input
                 type="text"
-                maxLength={32}
+                maxLength={16}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 className="w-40 bg-surface-lowest/90 border border-secondary/40 focus:border-secondary focus:ring-1 focus:ring-secondary/30 rounded-sm py-1 px-2 text-sm text-center text-text-primary font-cinzel font-semibold uppercase tracking-wider outline-none transition-all"
-                placeholder="NAME"
+                placeholder="NAME (MAX 16)"
               />
               <button
                 onClick={handleSaveName}
@@ -93,9 +82,12 @@ export default function ProfileCard({
               </button>
             </div>
           )}
-          <p className="font-grotesk text-[13px] font-medium tracking-wider text-secondary">
-            @{profile.username}
-          </p>
+
+          {civitasId && (
+            <p className="font-grotesk text-[11px] font-medium tracking-wider text-text-secondary/70">
+              Civitas ID: <span className="text-secondary select-all">{civitasId}</span>
+            </p>
+          )}
         </div>
       </div>
 
