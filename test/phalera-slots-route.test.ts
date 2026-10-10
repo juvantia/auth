@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    query: vi.fn(),
+    fetch: vi.fn(),
     withSession: vi.fn(
         async (
             _request: unknown,
@@ -20,7 +20,7 @@ vi.mock("supertokens-node", () => ({
     },
 }));
 vi.mock("supertokens-node/nextjs", () => ({ withSession: mocks.withSession }));
-vi.mock("@/lib/db", () => ({ query: mocks.query }));
+vi.stubGlobal("fetch",mocks.fetch);
 
 import { GET } from "@/app/api/user/phalera/slots/route";
 
@@ -36,35 +36,21 @@ describe("citizen phalera slots route", () => {
     });
 
     it("returns 10 slots with populated items at their respective indices", async () => {
-        mocks.query.mockResolvedValueOnce({
-            rows: [
-                {
-                    id: "0194f8f2-9f35-7a12-b6b4-9f40d70f9221",
-                    creator_citizen_id: "session-user",
-                    owner_citizen_id: "session-user",
-                    slot_index: 2,
-                    name: "Phalera #3",
-                    pixels: SAMPLE_PIXELS,
-                    palette: SAMPLE_PALETTE,
-                    created_at: new Date("2026-10-09T00:00:00Z"),
-                    updated_at: new Date("2026-10-09T00:00:00Z"),
-                },
-                {
-                    id: "0194f8f2-9f35-7a12-b6b4-9f40d70f9222",
-                    creator_citizen_id: "session-user",
-                    owner_citizen_id: "session-user",
-                    slot_index: 5,
-                    name: "Phalera #6",
-                    pixels: JSON.stringify(SAMPLE_PIXELS),
-                    palette: JSON.stringify(SAMPLE_PALETTE),
-                    created_at: "2026-10-09T00:00:00.000Z",
-                    updated_at: "2026-10-09T00:00:00.000Z",
-                },
-            ],
-        });
+        const slots=Array.from({length:10},()=>null) as Array<unknown>;
+        for(const slotIndex of [2,5])slots[slotIndex]={
+            id:`0194f8f2-9f35-7a12-b6b4-9f40d70f922${slotIndex===2?'1':'2'}`,
+            slotIndex,name:`Phalera #${slotIndex+1}`,pixels:SAMPLE_PIXELS,palette:SAMPLE_PALETTE,
+            creatorCitizenId:'session-user',ownerCitizenId:'session-user',image:null,
+            createdAt:'2026-10-09T00:00:00.000Z',updatedAt:'2026-10-09T00:00:00.000Z'
+        };
+        mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify({success:true,data:{slots}})));
 
-        const response = await GET(new NextRequest("https://auth.example.test/api/user/phalera/slots"));
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/phalera/slots",{headers:{Authorization:'Bearer verified-session'}}));
         expect(response.status).toBe(200);
+        const [target,init]=mocks.fetch.mock.calls.at(-1)!;
+        expect(new URL(target).pathname).toBe('/api/phalera/slots');
+        expect(new Headers(init.headers).get('authorization')).toBe('Bearer verified-session');
+        expect(new URL(target).search).toBe('');
 
         const data = await response.json();
         expect(data.success).toBe(true);
@@ -90,9 +76,9 @@ describe("citizen phalera slots route", () => {
     });
 
     it("returns 10 null slots when the user has no phaleras registered", async () => {
-        mocks.query.mockResolvedValueOnce({ rows: [] });
+        mocks.fetch.mockResolvedValueOnce(new Response(JSON.stringify({success:true,data:{slots:new Array(10).fill(null)}})));
 
-        const response = await GET(new NextRequest("https://auth.example.test/api/user/phalera/slots"));
+        const response = await GET(new NextRequest("https://auth.example.test/api/user/phalera/slots",{headers:{Authorization:'Bearer verified-session'}}));
         expect(response.status).toBe(200);
 
         const data = await response.json();

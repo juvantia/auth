@@ -29,7 +29,7 @@ export const backendConfig = (): TypeInput => {
                             ...originalImplementation,
                             sendEmail: async (input) => {
 
-                                const nodemailer = require("nodemailer");
+                                const nodemailer = await import("nodemailer");
 
                                 const transporter = nodemailer.createTransport({
                                     host: process.env.SMTP_HOST,

@@ -16,6 +16,7 @@ export const FilamentColorSchema = z
 export const PhaleraSlotSchema = z
     .object({
         id: z.string().uuid(),
+        image:z.object({url:z.string().url().regex(/^https:\/\/[^/]+\.r2\.cloudflarestorage\.com\//),expiresAt:z.string().datetime()}).strict().nullable(),
         slotIndex: z.number().int().min(0).max(9),
         name: z.string().max(64),
         pixels: z.array(z.number().int().min(0).max(15)).length(4096),

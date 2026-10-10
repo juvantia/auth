@@ -1,18 +1,16 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { canHandleRoute, getRoutingComponent } from 'supertokens-auth-react/ui';
 import { PasswordlessPreBuiltUI } from 'supertokens-auth-react/recipe/passwordless/prebuiltui';
 import { redirectToAuth } from 'supertokens-auth-react';
 
 export default function AuthTabs() {
-  const [loaded, setLoaded] = useState(false);
+  const loaded=useSyncExternalStore(()=>()=>{},()=>canHandleRoute([PasswordlessPreBuiltUI]),()=>false);
 
   useEffect(() => {
     if (canHandleRoute([PasswordlessPreBuiltUI]) === false) {
       void redirectToAuth({ redirectBack: false });
-    } else {
-      setLoaded(true);
     }
   }, []);
 
