@@ -1,7 +1,6 @@
 import Passwordless from "supertokens-node/recipe/passwordless";
 import Session from "supertokens-node/recipe/session";
 import { TypeInput } from "supertokens-node/types";
-import Dashboard from "supertokens-node/recipe/dashboard";
 import JWT from "supertokens-node/recipe/jwt";
 import supertokens from "supertokens-node";
 import { query } from "../lib/db";
@@ -134,7 +133,6 @@ export const backendConfig = (): TypeInput => {
                 },
             }),
             JWT.init(),
-            Dashboard.init(),
         ],
         isInServerlessEnv: true,
     };
