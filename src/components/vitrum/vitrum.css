@@ -17,7 +17,6 @@
   --vt-ink-3: rgba(238, 245, 242, 0.5);
   --vt-ink-4: rgba(238, 245, 242, 0.26);
   --vt-hairline: rgba(255, 255, 255, 0.14);
-  --vt-title: var(--font-cinzel), 'Times New Roman', serif;
   --vt-grotesk: var(--font-grotesk), 'Segoe UI', system-ui, sans-serif;
   --vt-barlow: var(--font-barlow), 'Arial Narrow', sans-serif;
   --vt-ease-enter: cubic-bezier(0.16, 0.84, 0.24, 1);
@@ -141,7 +140,7 @@
   padding-bottom: 22px;
 }
 
-/* ---------- Header: the wordmark exactly as on the Deck and in Citizen ---------- */
+/* ---------- Header: the JUVANTIA AUTH wordmark, an SVG at the old type's 22 px ---------- */
 .vt-head {
   display: flex;
   align-items: center;
@@ -155,17 +154,16 @@
 }
 
 .vt-brand {
-  font-family: var(--vt-title);
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 0.12em;
-  background: linear-gradient(90deg, var(--vt-green), var(--vt-cyan));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 0 24px rgba(0, 212, 255, 0.14);
+  margin: 0;
+  line-height: 0;
   animation: vt-fade 900ms 80ms ease-out backwards;
+}
+
+.vt-brand img {
+  display: block;
+  width: auto;
+  height: 22px;
+  filter: drop-shadow(0 0 24px rgba(0, 212, 255, 0.14));
 }
 
 /* ---------- A moment, not a form: the wordmark, the land, and one thing in the middle ----------
