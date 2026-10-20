@@ -1,6 +1,7 @@
 import Passwordless from "supertokens-auth-react/recipe/passwordless";
 import Session from "supertokens-auth-react/recipe/session";
 import { SuperTokensConfig } from "supertokens-auth-react/lib/build/types";
+import { webReturnTarget } from "@/lib/web-return";
 
 export const frontendConfig = (): SuperTokensConfig => {
     return {
@@ -191,11 +192,19 @@ export const frontendConfig = (): SuperTokensConfig => {
     async getRedirectionURL(context) {
         if (context.action === "SUCCESS" && typeof window !== "undefined") {
             const urlParams = new URLSearchParams(window.location.search);
+            const webReturn = webReturnTarget(window.location.search);
+            if (webReturn) {
+                return `/?${new URLSearchParams({ web_return: webReturn }).toString()}`;
+            }
             const authRedirect = urlParams.get("auth_redirect");
             if (authRedirect) {
                 return `/?auth_redirect=${encodeURIComponent(authRedirect)}`;
             }
             const redirectToPath = urlParams.get("redirectToPath");
+            const nestedWebReturn = redirectToPath?.startsWith('/?') ? webReturnTarget(redirectToPath.slice(1)) : null;
+            if (nestedWebReturn) {
+                return `/?${new URLSearchParams({ web_return: nestedWebReturn }).toString()}`;
+            }
             if (redirectToPath === "close") {
                 window.close();
                 return undefined;

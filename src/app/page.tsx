@@ -15,6 +15,7 @@ import SignInMethodCard from '@/components/auth/SignInMethodCard';
 import PhaleraCard from '@/components/auth/PhaleraCard';
 import StatusDescriptionCard from '@/components/auth/StatusDescriptionCard';
 import type { PhaleraSlot } from '@/contracts/phalera';
+import { webReturnTarget } from '@/lib/web-return';
 
 function Dashboard() {
   const session = useSessionContext();
@@ -205,6 +206,11 @@ function Dashboard() {
   useEffect(() => {
     if (profile && !needsOnboarding) {
       const urlParams = new URLSearchParams(window.location.search);
+      const webReturn = webReturnTarget(window.location.search);
+      if (webReturn) {
+        window.location.replace(webReturn);
+        return;
+      }
       const nativeRedirectUri = urlParams.get('native_redirect_uri');
       const nativeState = urlParams.get('state');
       const codeChallenge = urlParams.get('code_challenge');
@@ -275,9 +281,10 @@ function Dashboard() {
   const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const isPopup = urlParams?.get('popup') === 'true';
   const hasAuthRedirect = Boolean(urlParams?.has('auth_redirect'));
+  const hasWebReturn = typeof window !== 'undefined' && Boolean(webReturnTarget(window.location.search));
   const isNativeHandoff =
     Boolean(urlParams?.get('native_redirect_uri') && urlParams.get('state') && urlParams.get('code_challenge')) && !nativeHandoffFailed;
-  const isRedirecting = isPopup || hasAuthRedirect || isNativeHandoff;
+  const isRedirecting = isPopup || hasAuthRedirect || isNativeHandoff || hasWebReturn;
   const isAuthenticating = session.loading || isLoading;
   // One answer for every client that asked: ACCESS GRANTED. A citizen who came on their own gets the profile.
   const isGranted = !isAuthenticating && isRedirecting && Boolean(profile) && !needsOnboarding;
